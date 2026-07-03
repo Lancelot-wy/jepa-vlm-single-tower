@@ -1,0 +1,6 @@
+# V1 (control): no mask, regress h_t at every position. Regularizer baseline, not the main plan.
+_base_: base.yaml
+model:
+  mask_variant: v1
+train:
+  output_dir: runs/phase_a_v1

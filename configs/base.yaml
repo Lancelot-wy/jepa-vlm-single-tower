@@ -1,0 +1,46 @@
+# Base config: Qwen3-VL-2B, Phase A masked latent regression on SSv2.
+# All variants/ablations inherit from this via `_base_`.
+model:
+  pretrained: Qwen/Qwen3-VL-2B-Instruct
+  dtype: bfloat16
+  attn_implementation: sdpa        # switch to flash_attention_2 on the cluster
+  frame_size: 256                  # 256px -> 8x8 merged tokens/frame -> pooled 2x2
+  tokens_per_frame: 4
+  pooling: avg                     # parameter-free; "attn" = learned pooling (ablation)
+  duplicate_frames: true           # 1 latent slot == 1 sampled frame (temporal_patch_size=2)
+  mask_variant: v2.1               # main plan variant: loss on [M] positions only
+  mask_ratio: 0.5
+  mask_mode: tube
+  mask_tube_max_run: 4
+  mtp_enabled: true
+  mtp_k: 4
+  use_deepstack: true              # pooled deepstack injection, zeroed at masked slots
+  bidirectional_visual: false
+
+train:
+  phase: a
+  seed: 0
+  train_manifest: data/ssv2/train_flow.jsonl   # + Ego4D: concatenate manifests into one file
+  val_manifest: data/ssv2/val.jsonl
+  data_root: /data/ssv2/videos
+  min_flow: 0.5                    # drop static clips; tune after inspecting flow percentiles
+  num_frames: 16
+  sample_fps: 2.0
+  frame_sampling: fps_or_uniform
+  batch_size: 8                    # per GPU; effective batch = 8 x GPUs x grad_accum
+  grad_accum: 2
+  num_workers: 8
+  lr: 1.0e-4                       # new params (heads, [M], pooling)
+  lr_backbone: 1.0e-5              # ViT + LLM
+  weight_decay: 0.05
+  warmup_steps: 500
+  max_steps: 6000                  # ~2 epochs of SSv2+Ego4D (400k clips) at eff. batch 128 (plan: 1-2 epochs)
+  grad_clip: 1.0
+  gradient_checkpointing: true
+  train_vision: true
+  train_llm: full                  # full | lora | frozen
+  log_every: 20
+  save_every: 2000
+  eval_every: 1000
+  eval_batches: 50
+  output_dir: runs/phase_a_v21

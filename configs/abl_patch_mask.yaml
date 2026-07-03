@@ -1,0 +1,7 @@
+# Ablation 5.1 (negative control): token-level random masking instead of frame tubes.
+# Expected to fail / learn spatial inpainting rather than temporal dynamics.
+_base_: base.yaml
+model:
+  mask_mode: patch
+train:
+  output_dir: runs/abl_patch_mask

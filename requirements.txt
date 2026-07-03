@@ -1,0 +1,10 @@
+# python >= 3.10; torch >= 2.4 installed separately per cluster CUDA version
+transformers>=4.57      # first version with Qwen3-VL (locally validated on 5.12)
+accelerate>=1.0
+av>=12.0                # video decoding (PyAV)
+pyyaml
+numpy
+peft>=0.14              # only for train_llm=lora
+# optional:
+# opencv-python-headless  # scripts/compute_flow.py
+# decord                  # not used; PyAV covers webm+mp4 on linux & macos

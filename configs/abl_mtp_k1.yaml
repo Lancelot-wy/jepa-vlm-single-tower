@@ -1,0 +1,6 @@
+# Ablation 5.4: MTP with k=1 only.
+_base_: base.yaml
+model:
+  mtp_k: 1
+train:
+  output_dir: runs/abl_mtp_k1

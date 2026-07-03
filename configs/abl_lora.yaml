@@ -1,0 +1,7 @@
+# Low-cost variant: LLM via LoRA r=64, vision encoder frozen.
+_base_: base.yaml
+train:
+  train_llm: lora
+  lora_r: 64
+  train_vision: false
+  output_dir: runs/abl_lora

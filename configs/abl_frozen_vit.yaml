@@ -1,0 +1,7 @@
+# Safety variant: frozen vision encoder. With a trainable encoder and stop-grad-only targets
+# (no EMA), representation collapse is possible; this variant pins the target space.
+# Compare target_std / adj_cos monitors against the main run.
+_base_: base.yaml
+train:
+  train_vision: false
+  output_dir: runs/abl_frozen_vit

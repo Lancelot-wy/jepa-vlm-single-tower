@@ -1,0 +1,8 @@
+# Extra ablation: bidirectional attention among visual tokens (true masked inpainting
+# instead of causal prediction). MTP must be off (future would be visible).
+_base_: base.yaml
+model:
+  bidirectional_visual: true
+  mtp_enabled: false
+train:
+  output_dir: runs/abl_bidir

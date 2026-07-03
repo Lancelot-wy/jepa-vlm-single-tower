@@ -1,0 +1,6 @@
+# Ablation 5.4: MTP branch disabled.
+_base_: base.yaml
+model:
+  mtp_enabled: false
+train:
+  output_dir: runs/abl_mtp_off

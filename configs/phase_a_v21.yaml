@@ -1,0 +1,2 @@
+# Main experiment (V2.1): mask + regression loss on [M] positions only.
+_base_: base.yaml

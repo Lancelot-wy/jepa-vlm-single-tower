@@ -1,0 +1,6 @@
+# V2.2: mask applied, regression loss on ALL positions.
+_base_: base.yaml
+model:
+  mask_variant: v2.2
+train:
+  output_dir: runs/phase_a_v22

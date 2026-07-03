@@ -1,0 +1,14 @@
+# Phase B: joint CE + lambda * regression on QA data (run only after Phase A passes the gate).
+# text_manifest lines: {"video": ..., "question": ..., "answer": ...}
+# Build it from SSv2 labels (template -> QA) + your SFT mix; temporal QA (shuffle/reverse)
+# is generated on the fly via temporal_qa_ratio in QAVideoDataset.
+_base_: base.yaml
+model:
+  mask_variant: v2.1
+train:
+  phase: b
+  lambda_reg: 0.2            # start at grad-norm parity; sweep 0.1-0.5 (plan 5.5)
+  text_manifest: data/ssv2/qa_train.jsonl
+  max_text_len: 256
+  max_steps: 10000
+  output_dir: runs/phase_b

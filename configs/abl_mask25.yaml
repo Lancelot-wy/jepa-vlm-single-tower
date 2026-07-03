@@ -1,0 +1,6 @@
+# Ablation 5.2: mask ratio 25%.
+_base_: base.yaml
+model:
+  mask_ratio: 0.25
+train:
+  output_dir: runs/abl_mask25

@@ -1,0 +1,23 @@
+# Local CPU smoke test: random-init tiny Qwen3-VL + synthetic videos.
+_base_: base.yaml
+model:
+  tiny_config: true
+  dtype: float32
+  frame_size: 64
+train:
+  train_manifest: data/synthetic/train.jsonl
+  val_manifest: data/synthetic/val.jsonl
+  data_root: data/synthetic
+  min_flow: 0.0
+  num_frames: 8
+  batch_size: 2
+  grad_accum: 1
+  num_workers: 0
+  warmup_steps: 2
+  max_steps: 6
+  log_every: 2
+  save_every: 6
+  eval_every: 3
+  eval_batches: 2
+  gradient_checkpointing: false
+  output_dir: runs/debug_tiny
