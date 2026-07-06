@@ -1,0 +1,21 @@
+# Round-2 base: LLaVA-Video with MOTION FILTERING, short attribution runs.
+#
+# Changes vs round 1 (see EXPERIMENTS.md):
+#   - train_flow.jsonl + min_flow: static clips removed (first-order suspect)
+#   - MTP OFF by default (round-1 evidence: amplifies temporal smoothing / collapse)
+#   - 2000 steps: round-1 curves plateaued by ~1000; short runs answer attribution
+# min_flow default 0.0 is a placeholder: set it from compute_flow's printed
+# percentiles (~p30) at launch, e.g. EXTRA_OVERRIDES='train.min_flow=1.25'.
+_base_: vivolm_llava_video.yaml
+
+model:
+  mtp_enabled: false
+
+train:
+  train_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/train_flow.jsonl
+  min_flow: 0.0                    # TODO(fill): ~p30 from compute_flow output
+  max_steps: 2000
+  warmup_steps: 200
+  save_every: 1000
+  eval_every: 500
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_base

@@ -1,0 +1,8 @@
+# R2-D: residual target arm - regress h_t - h_{nearest visible frame} at masked
+# positions. The copy solution is exactly "predict zero", so copy_mse keeps its
+# meaning and nontrivial_ratio < 1 now certifies genuinely modeled dynamics.
+_base_: r2_base.yaml
+model:
+  residual_target: true
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_residual

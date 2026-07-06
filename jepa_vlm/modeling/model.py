@@ -118,6 +118,12 @@ class JepaQwen3VL(nn.Module):
         if mc.bidirectional_visual and mc.mtp_enabled:
             raise ValueError("bidirectional_visual sees future frames -> MTP is trivial; "
                              "set model.mtp_enabled=false for this ablation")
+        if mc.residual_target and (
+            mc.mask_variant != "v2.1" or mc.mask_mode != "tube" or mc.mtp_enabled
+        ):
+            raise ValueError("residual_target requires mask_variant=v2.1, mask_mode=tube "
+                             "and mtp_enabled=false (residual semantics are defined per "
+                             "masked frame against its nearest visible frame)")
 
     # ------------------------------------------------------------------ vision
     def encode_video(self, pixel_values: torch.Tensor, grid_thw: torch.Tensor):
@@ -185,7 +191,10 @@ class JepaQwen3VL(nn.Module):
         h, deepstack = self.encode_video(pixel_values, grid_thw)
         B, T, P, D = h.shape
 
-        target = self.target_norm(h.float()).detach()
+        # normed_online keeps the graph to the encoder (variance regularizer);
+        # the regression target is its detached copy (stop-grad, no EMA).
+        normed_online = self.target_norm(h.float())
+        target = normed_online.detach()
 
         use_mask = (mc.mask_variant != "v1") and not disable_mask
         if use_mask and token_mask is None:
@@ -199,14 +208,16 @@ class JepaQwen3VL(nn.Module):
 
         if input_ids is None:
             return self._forward_visual_only(
-                h_in, deepstack, target, token_mask if use_mask else None, output_hidden_states
+                h_in, deepstack, target, token_mask if use_mask else None,
+                output_hidden_states, normed_online,
             )
         return self._forward_with_text(
             h_in, deepstack, target, token_mask if use_mask else None,
-            input_ids, attention_mask, labels, output_hidden_states,
+            input_ids, attention_mask, labels, output_hidden_states, normed_online,
         )
 
-    def _forward_visual_only(self, h_in, deepstack, target, token_mask, output_hidden_states):
+    def _forward_visual_only(self, h_in, deepstack, target, token_mask,
+                             output_hidden_states, normed_online=None):
         mc = self.cfg.model
         B, T, P, D = h_in.shape
         L = T * P
@@ -230,7 +241,8 @@ class JepaQwen3VL(nn.Module):
             output_hidden_states=output_hidden_states,
         )
         hidden = outputs.last_hidden_state.reshape(B, T, P, D)
-        loss, reg_loss, mtp_loss, metrics = self._compute_losses(hidden, target, token_mask)
+        loss, reg_loss, mtp_loss, metrics = self._compute_losses(
+            hidden, target, token_mask, normed_online)
         return JepaOutput(
             loss=loss, reg_loss=reg_loss, mtp_loss=mtp_loss, metrics=metrics,
             hidden_states=getattr(outputs, "hidden_states", None),
@@ -238,7 +250,8 @@ class JepaQwen3VL(nn.Module):
         )
 
     def _forward_with_text(self, h_in, deepstack, target, token_mask,
-                           input_ids, attention_mask, labels, output_hidden_states):
+                           input_ids, attention_mask, labels, output_hidden_states,
+                           normed_online=None):
         B, T, P, D = h_in.shape
         device = h_in.device
         video_token_id = self.hf_config.video_token_id
@@ -261,7 +274,8 @@ class JepaQwen3VL(nn.Module):
         )
         seq_hidden = outputs.last_hidden_state
         hidden = seq_hidden[video_mask].reshape(B, T, P, D)
-        loss, reg_loss, mtp_loss, metrics = self._compute_losses(hidden, target, token_mask)
+        loss, reg_loss, mtp_loss, metrics = self._compute_losses(
+            hidden, target, token_mask, normed_online)
 
         ce_loss = None
         if labels is not None:
@@ -281,12 +295,37 @@ class JepaQwen3VL(nn.Module):
         )
 
     # ------------------------------------------------------------------ losses & monitors
-    def _compute_losses(self, hidden, target, token_mask):
+    @staticmethod
+    def _nearest_visible(frame_masked_row: torch.Tensor) -> list[tuple[int, int]]:
+        """(t_masked, t_src) pairs: nearest past visible frame, else nearest future one.
+        Matches the causal copy baseline (and defines the residual-target reference)."""
+        masked_idx = frame_masked_row.nonzero().flatten()
+        free_idx = (~frame_masked_row).nonzero().flatten()
+        pairs = []
+        if len(masked_idx) == 0 or len(free_idx) == 0:
+            return pairs
+        for t in masked_idx.tolist():
+            past = free_idx[free_idx < t]
+            src = int(past.max()) if len(past) else int(free_idx[free_idx > t].min())
+            pairs.append((t, src))
+        return pairs
+
+    def _compute_losses(self, hidden, target, token_mask, normed_online=None):
         mc = self.cfg.model
         B, T, P, D = hidden.shape
         pred = self.reg_head(hidden).float()
 
-        if mc.mask_variant == "v2.1" and token_mask is not None:
+        if mc.residual_target and token_mask is not None:
+            # target = h_t - h_src: the copy solution is exactly "predict zero", so any
+            # ratio below 1 vs copy_mse now reflects genuinely modeled dynamics.
+            frame_masked = token_mask.all(dim=-1)
+            res_target = torch.zeros_like(target)
+            for b in range(B):
+                for t, s in self._nearest_visible(frame_masked[b]):
+                    res_target[b, t] = target[b, t] - target[b, s]
+            m = token_mask.to(hidden.device)
+            reg_loss = F.mse_loss(pred[m], res_target[m])
+        elif mc.mask_variant == "v2.1" and token_mask is not None:
             m = token_mask.to(hidden.device)
             reg_loss = F.mse_loss(pred[m], target[m])
         else:  # v1 / v2.2: all positions
@@ -315,9 +354,19 @@ class JepaQwen3VL(nn.Module):
 
         loss = reg_loss if mtp_loss is None else reg_loss + mtp_loss
 
+        var_metrics = {}
+        if mc.var_reg_weight > 0 and normed_online is not None:
+            # VICReg-style hinge on per-dim std across (B,T,P); gradient flows to the
+            # encoder through normed_online and counters directional collapse.
+            std = normed_online.reshape(-1, D).std(dim=0)
+            var_loss = F.relu(mc.var_reg_gamma - std).mean()
+            loss = loss + mc.var_reg_weight * var_loss
+            var_metrics["var_loss"] = float(var_loss.detach())
+
         metrics = {
             "reg_loss": float(reg_loss.detach()),
             **mtp_metrics,
+            **var_metrics,
             **self._monitors(target, token_mask),
         }
         if mtp_loss is not None:
@@ -344,13 +393,7 @@ class JepaQwen3VL(nn.Module):
             frame_masked = token_mask.all(dim=-1)  # (B, T)
             errs = []
             for bi in range(B):
-                masked_idx = frame_masked[bi].nonzero().flatten()
-                free_idx = (~frame_masked[bi]).nonzero().flatten()
-                if len(masked_idx) == 0 or len(free_idx) == 0:
-                    continue
-                for t in masked_idx.tolist():
-                    past = free_idx[free_idx < t]
-                    src = int(past.max()) if len(past) else int(free_idx[free_idx > t].min())
+                for t, src in self._nearest_visible(frame_masked[bi]):
                     errs.append(F.mse_loss(target[bi, src], target[bi, t]))
             if errs:
                 out["copy_mse"] = float(torch.stack(errs).mean())

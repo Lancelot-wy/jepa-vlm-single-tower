@@ -19,7 +19,9 @@ import sys
 # columns shown in the table (train-side metrics); order matters.
 TRAIN_COLS = ["step", "loss", "reg_loss", "mtp_loss", "target_std", "adj_cos",
               "copy_mse", "sec_per_step"]
-VAL_COLS = ["reg_loss", "target_std", "adj_cos"]
+# val records store keys with a "val/" prefix (see train.py quick_eval).
+# nontrivial_ratio is the plan's go/no-go gate - keep it in the table.
+VAL_COLS = ["reg_loss", "copy_mse", "nontrivial_ratio", "target_std", "adj_cos"]
 
 
 def last_records(log_path: str):
@@ -61,7 +63,7 @@ def main(argv):
         for c in TRAIN_COLS:
             row[c] = fmt(tr.get(c)) if tr else None
         for c in VAL_COLS:
-            row[f"val_{c}"] = fmt(va.get(c)) if va else None
+            row[f"val_{c}"] = fmt(va.get(f"val/{c}")) if va else None
         rows.append(row)
 
     out_dir = os.path.join(root, "summary")

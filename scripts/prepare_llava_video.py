@@ -1,19 +1,26 @@
-"""Build jepa-vlm manifests from a LOCAL LLaVA-Video-178K copy (Phase A getting-started).
+"""Build jepa-vlm manifests from a LOCAL LLaVA-Video-178K copy.
 
 LLaVA-Video ships per-subset jsonl under <root>/jsonl/final_<subset>_*_processed.jsonl
 whose lines carry an absolute `video_path` to an already-extracted video. Phase A is
-self-supervised (only `video` is needed), so we just dedup the video paths, drop any
-that are missing on disk, and split into train/val manifests.
+self-supervised (only `video` is needed): we dedup video paths, drop missing files,
+and split into train/val manifests.
+
+With --qa we additionally extract {video, question, answer} pairs from each record's
+`conversations` (LLaVA format: alternating human/gpt turns) into qa_train.jsonl for
+the SFT baseline / Phase B. QA pairs are taken ONLY from train-split videos so the
+val manifest stays clean for probes. NOTE: verify the conversations schema against
+one line of your local jsonl (`head -1 ... | python -m json.tool`); adjust
+extract_qa() if the field names differ.
 
   python scripts/prepare_llava_video.py \
       --root /data/vjuicefs_ai_ocr_wl/public_data/video_data/LLaVA-Video-178K \
       --subsets 0_30_s_academic_v0_1 \
       --out-dir /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video \
-      --max-videos 8000
+      --max-videos 8000 --qa
 
 Then set in your config (paths are absolute -> data_root=""):
-  train.train_manifest=<out>/train.jsonl  train.val_manifest=<out>/val.jsonl
-  train.data_root=""  train.min_flow=0.0
+  train.train_manifest=<out>/train_flow.jsonl   (after scripts/compute_flow.py)
+  train.val_manifest=<out>/val.jsonl  train.data_root=""
 """
 
 import argparse
@@ -22,8 +29,10 @@ import json
 import os
 import random
 
+MEDIA_TOKENS = ("<image>", "<video>")
 
-def iter_video_paths(root: str, subsets: list[str]):
+
+def iter_records(root: str, subsets: list[str]):
     jsonl_dir = os.path.join(root, "jsonl")
     files = sorted(glob.glob(os.path.join(jsonl_dir, "final_*_processed*.jsonl")))
     if subsets:
@@ -42,7 +51,26 @@ def iter_video_paths(root: str, subsets: list[str]):
                     continue
                 vp = d.get("video_path") or d.get("video")
                 if vp:
-                    yield vp
+                    yield vp, d
+
+
+def extract_qa(rec: dict, max_pairs: int = 2) -> list[tuple[str, str]]:
+    """Tolerant QA extraction from LLaVA-style `conversations` (human/gpt turns)."""
+    convs = rec.get("conversations") or rec.get("QA") or []
+    pairs, q = [], None
+    for turn in convs:
+        who = (turn.get("from") or turn.get("role") or "").lower()
+        text = (turn.get("value") or turn.get("content") or "").strip()
+        for tok in MEDIA_TOKENS:
+            text = text.replace(tok, "").strip()
+        if who in ("human", "user"):
+            q = text
+        elif who in ("gpt", "assistant") and q:
+            pairs.append((q, text))
+            q = None
+        if len(pairs) >= max_pairs:
+            break
+    return pairs
 
 
 def main():
@@ -54,19 +82,21 @@ def main():
     ap.add_argument("--max-videos", type=int, default=0, help="0 = no cap")
     ap.add_argument("--val-frac", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--qa", action="store_true", help="also write qa_train.jsonl (SFT baseline / Phase B)")
+    ap.add_argument("--qa-per-video", type=int, default=2)
     ap.add_argument("--no-check-files", action="store_true",
                     help="skip os.path.exists filtering (faster, but may keep missing files)")
     args = ap.parse_args()
 
-    seen: set[str] = set()
+    seen: dict[str, dict] = {}
     n_missing = 0
-    for vp in iter_video_paths(args.root, args.subsets):
+    for vp, rec in iter_records(args.root, args.subsets):
         if vp in seen:
             continue
         if not args.no_check_files and not os.path.exists(vp):
             n_missing += 1
             continue
-        seen.add(vp)
+        seen[vp] = rec
         if args.max_videos and len(seen) >= args.max_videos:
             break
 
@@ -81,8 +111,26 @@ def main():
             for vp in rows:
                 out.write(json.dumps({"video": vp}) + "\n")
     print(f"videos: {len(vids)} (missing {n_missing}) -> train {len(train)} / val {len(val)}")
+
+    if args.qa:
+        n_qa = 0
+        qa_path = os.path.join(args.out_dir, "qa_train.jsonl")
+        with open(qa_path, "w") as out:
+            for vp in train:
+                for q, a in extract_qa(seen[vp], args.qa_per_video):
+                    out.write(json.dumps({"video": vp, "question": q, "answer": a},
+                                         ensure_ascii=False) + "\n")
+                    n_qa += 1
+        print(f"qa pairs: {n_qa} -> {qa_path}")
+        if n_qa == 0:
+            print("WARNING: no QA extracted - the conversations schema likely differs; "
+                  "inspect one source line and adjust extract_qa().")
+        else:
+            with open(qa_path) as f:
+                print("sample:", f.readline().strip()[:200])
+
     print(f"wrote {args.out_dir}/train.jsonl , val.jsonl")
-    print("set: train.data_root='' train.min_flow=0.0")
+    print("set: train.data_root='' ; run scripts/compute_flow.py on train.jsonl next")
 
 
 if __name__ == "__main__":

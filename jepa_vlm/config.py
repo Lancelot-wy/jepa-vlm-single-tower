@@ -46,6 +46,15 @@ class ModelConfig:
     # --- attention over visual tokens ---
     bidirectional_visual: bool = False # ablation: visual tokens attend bidirectionally (disables MTP)
 
+    # --- mechanism-fix arms (added after the first cluster round, see results/ANALYSIS) ---
+    var_reg_weight: float = 0.0        # VICReg-style per-dim std hinge on the (normed, non-detached)
+                                       # online features; counters directional collapse. 0 = off.
+    var_reg_gamma: float = 0.4         # std floor; calibrate to the frozen-ViT target_std level
+    residual_target: bool = False      # regress h_t - h_{nearest visible frame} instead of h_t:
+                                       # the copy solution becomes exactly "predict zero", so the
+                                       # nontrivial ratio (reg/copy) must go below 1 to mean anything.
+                                       # Requires v2.1 + tube mask + mtp_enabled=false.
+
     # --- probes ---
     probe_layers: tuple = (-1,)        # relative layer indices for hidden-state probes; resolved at runtime
                                        # default set in train/probe scripts: middle + last

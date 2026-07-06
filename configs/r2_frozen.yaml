@@ -1,0 +1,7 @@
+# R2-A: frozen ViT on motion-filtered data. Pure data-attribution arm: target space
+# pinned, no collapse channel. If the nontrivial ratio drops well below round-1's
+# ~1.6, data was the binding constraint.
+_base_: r2_base.yaml
+train:
+  train_vision: false
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_frozen

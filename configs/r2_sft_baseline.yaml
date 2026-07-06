@@ -1,0 +1,13 @@
+# R2-E: SFT baseline (pure CE, the "any-training" control for probe comparisons).
+# Clean SFT requires all three: lambda_reg=0 (no regression gradient),
+# mask_variant=v1 (input NOT corrupted by [M]), mtp off (inherited from r2_base).
+# Uses LLaVA-Video native QA (qa_train.jsonl from prepare_llava_video.py --qa).
+_base_: r2_base.yaml
+model:
+  mask_variant: v1
+train:
+  phase: b
+  lambda_reg: 0.0
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/qa_train.jsonl
+  max_text_len: 256
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_sft_baseline

@@ -1,0 +1,9 @@
+# R2-C: v2.1 + VICReg-style variance regularizer (anti-collapse arm).
+# gamma calibrated to the pinned-space per-dim std (~0.42 in round 1, frozen_vit).
+# Success criterion: target_std stays near gamma AND ratio improves vs r2_v21.
+_base_: r2_base.yaml
+model:
+  var_reg_weight: 1.0
+  var_reg_gamma: 0.4
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_varreg

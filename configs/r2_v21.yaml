@@ -1,0 +1,6 @@
+# R2-B: main treatment (v2.1, trainable ViT) on motion-filtered data, MTP off.
+# Watch target_std / adj_cos against r2_frozen to see whether collapse persists
+# once the data is fixed.
+_base_: r2_base.yaml
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_v21
