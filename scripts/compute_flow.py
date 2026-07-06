@@ -73,6 +73,8 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--method", default="framediff", choices=["framediff", "farneback"])
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--resume", action="store_true",
+                    help="skip videos already present in --out and append")
     args = ap.parse_args()
 
     if args.method == "farneback":
@@ -85,16 +87,32 @@ def main():
 
     with open(args.manifest) as f:
         items = [json.loads(l) for l in f if l.strip()]
-    tasks = [(it, args.data_root) for it in items]
-    scored = []
-    with ProcessPoolExecutor(args.workers) as ex, open(args.out, "w") as out:
+
+    done = set()
+    if args.resume and os.path.exists(args.out):
+        with open(args.out) as f:
+            for l in f:
+                l = l.strip()
+                if not l:
+                    continue
+                try:
+                    done.add(json.loads(l)["video"])
+                except Exception:
+                    continue
+        print(f"resume: {len(done)} already scored, skipping them")
+    pending = [it for it in items if it["video"] not in done]
+    tasks = [(it, args.data_root) for it in pending]
+    open_mode = "a" if (args.resume and done) else "w"
+    with ProcessPoolExecutor(args.workers) as ex, open(args.out, open_mode) as out:
         for i, item in enumerate(ex.map(score, tasks, chunksize=16)):
             out.write(json.dumps(item) + "\n")
-            scored.append(item)
+            out.flush()
             if i % 1000 == 0:
-                print(f"{i}/{len(items)}")
+                print(f"{i}/{len(tasks)} (pending)")
 
-    flows = np.array([it["flow"] for it in scored if it.get("flow") is not None])
+    with open(args.out) as f:
+        flows = np.array([json.loads(l)["flow"] for l in f
+                          if l.strip() and json.loads(l).get("flow") is not None])
     print(f"\ndone: {len(flows)}/{len(items)} scored (method={args.method})")
     if len(flows):
         qs = [5, 10, 20, 30, 50, 70, 90]

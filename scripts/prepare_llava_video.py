@@ -29,7 +29,7 @@ import json
 import os
 import random
 
-MEDIA_TOKENS = ("<image>", "<video>")
+MEDIA_TOKENS = ("<image>", "<video>", "<|video_pad|>", "<|image_pad|>", "<|vision_start|>", "<|vision_end|>")
 
 
 def iter_records(root: str, subsets: list[str]):

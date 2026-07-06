@@ -36,11 +36,17 @@ TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
 for name in "${EXPS[@]}"; do
-  cfg="configs/cl_${name}.yaml"
-  if [[ ! -f "$cfg" ]]; then echo "!! missing $cfg -- skipping" >&2; continue; fi
+  # accept either configs/<name>.yaml (e.g. r2_v21) or the legacy configs/cl_<name>.yaml
+  cfg="configs/${name}.yaml"
+  [[ -f "$cfg" ]] || cfg="configs/cl_${name}.yaml"
+  if [[ ! -f "$cfg" ]]; then echo "!! missing configs/${name}.yaml and $cfg -- skipping" >&2; continue; fi
   yaml="$TMPDIR/job_${name}.yaml"
   # platform `type` allows only [alpha][num]- ; map underscores to dashes.
   jobtype="jepa-vlm-${name//_/-}"
+  # optional per-batch overrides (e.g. EXTRA_OVERRIDES='train.min_flow=8.42')
+  cmd="CONFIG=${cfg}"
+  [[ -n "${EXTRA_OVERRIDES:-}" ]] && cmd="${cmd} EXTRA_OVERRIDES='${EXTRA_OVERRIDES}'"
+  cmd="${cmd} bash ${PROJECT_ROOT}/scripts/cluster/job_entry.sh"
   cat > "$yaml" <<EOF
 type: ${jobtype}
 business: ${BUSINESS}
@@ -52,7 +58,7 @@ tmpfs: true
 restartPolicy: Never
 run:
   rdma: 'ib'
-  command: "CONFIG=${cfg} bash ${PROJECT_ROOT}/scripts/cluster/job_entry.sh"
+  command: "${cmd}"
 spec:
   Worker:
     num: ${NODES}

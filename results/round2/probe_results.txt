@@ -1,0 +1,24 @@
+# temporal probe results  Mon Jul  6 19:55:28 CST 2026
+base random_shuffle: layer27_frames           64.60%
+# temporal probe results  Mon Jul  6 20:19:00 CST 2026
+# temporal probe results  Mon Jul  6 20:19:02 CST 2026
+# temporal probe results  Mon Jul  6 20:19:02 CST 2026
+base random_shuffle: layer27_frames           64.80%
+# temporal probe results  Mon Jul  6 20:46:49 CST 2026
+# temporal probe results  Mon Jul  6 20:46:50 CST 2026
+# temporal probe results  Mon Jul  6 20:46:51 CST 2026
+# temporal probe results  Mon Jul  6 20:46:51 CST 2026
+# temporal probe results  Mon Jul  6 20:46:51 CST 2026
+# temporal probe results  Mon Jul  6 20:46:51 CST 2026
+base random_shuffle: layer27_frames           65.22%
+base random_reverse: layer27_frames           57.14%
+r2_varreg random_shuffle: layer27_frames           67.08%
+r2_sft_baseline random_shuffle: layer27_frames           67.49%
+r2_frozen random_shuffle: layer27_frames           66.87%
+r2_v21 random_shuffle: layer27_frames           68.94%
+r2_residual random_shuffle: layer27_frames           67.91%
+r2_varreg random_reverse: layer27_frames           60.46%
+r2_sft_baseline random_reverse: layer27_frames           55.69%
+r2_frozen random_reverse: layer27_frames           57.76%
+r2_v21 random_reverse: layer27_frames           61.70%
+r2_residual random_reverse: layer27_frames           57.35%
