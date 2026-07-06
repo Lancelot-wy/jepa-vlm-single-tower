@@ -1,0 +1,12 @@
+# R2-B formal rerun: v2.1 main treatment, MTP off, motion-filtered data.
+# Round-2 attribution (2000 steps) showed v21 wins the temporal probe
+# (reverse 61.70 vs base 57.14, vs sft 55.69) -> promote to a longer run.
+# min_flow baked in (train_flow p30) so the formal run is reproducible w/o overrides.
+_base_: r2_base.yaml
+train:
+  min_flow: 8.42
+  max_steps: 8000
+  warmup_steps: 800
+  save_every: 2000
+  eval_every: 1000
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_v21_formal

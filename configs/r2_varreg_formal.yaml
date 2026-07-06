@@ -1,0 +1,15 @@
+# R2-C formal rerun: v2.1 + VICReg variance regularizer (anti-collapse), MTP off.
+# Round-2 attribution (2000 steps): reverse 60.46 (>base, >sft) AND highest
+# target_std (0.616) -> anti-collapse holds while beating base; promote to a longer run.
+# min_flow baked in (train_flow p30) for reproducibility.
+_base_: r2_base.yaml
+model:
+  var_reg_weight: 1.0
+  var_reg_gamma: 0.4
+train:
+  min_flow: 8.42
+  max_steps: 8000
+  warmup_steps: 800
+  save_every: 2000
+  eval_every: 1000
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r2_varreg_formal
