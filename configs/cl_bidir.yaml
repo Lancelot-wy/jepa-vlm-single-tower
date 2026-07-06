@@ -1,0 +1,7 @@
+# Cluster ablation: bidirectional visual attention (MTP off, future visible).
+_base_: vivolm_llava_video.yaml
+model:
+  bidirectional_visual: true
+  mtp_enabled: false
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_bidir

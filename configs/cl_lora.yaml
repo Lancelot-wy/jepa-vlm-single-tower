@@ -1,0 +1,7 @@
+# Cluster low-cost variant: LLM via LoRA r=64, vision frozen.
+_base_: vivolm_llava_video.yaml
+train:
+  train_llm: lora
+  lora_r: 64
+  train_vision: false
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_lora

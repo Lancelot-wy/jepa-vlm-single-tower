@@ -408,6 +408,10 @@ def build_model(cfg: Config):
             mc.pretrained, dtype=dtype, attn_implementation=mc.attn_implementation
         )
     model = JepaQwen3VL(hf, cfg)
+    # JEPA heads (reg_head/mtp_heads) are created after the bf16 backbone and
+    # default to fp32; align the whole wrapper to the backbone dtype so hidden
+    # states and head weights match (reg/target losses still run in fp32 via .float()).
+    model.to(dtype)
 
     # --- freezing ---
     model.lm_head.requires_grad_(False)

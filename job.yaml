@@ -1,0 +1,57 @@
+# vivolm-style platform job for jepa-vlm-single-tower Phase A on a local
+# LLaVA-Video-178K subset (Qwen3-VL-2B). Modeled on vlm_jepa_lf_three_machine/job.yaml.
+# Submit from the dev machine (no GPU there; the platform schedules GPU pods):
+#   /data/vtraining_04/code/vtraining/cli/vtraining run -f job.yaml
+#
+# The platform schedules `Worker.num` pods (each 4 GPUs), injects TF_CONFIG into
+# every pod, and starts `run.command` in all of them at once. scripts/cluster/
+# job_entry.sh -> env.cluster.sh turns TF_CONFIG into torchrun rendezvous args
+# (no hard-coded IPs, no ssh). All python packages come from the shared conda env
+# on juicefs (public_data/11193960/envs/jepa311) -- NO custom image build needed.
+
+type: jepa-vlm-qwen3vl-phasea
+
+# GPU queue with cards (per user). This queue needs no subBusiness.
+business: VideoFoundationModel1b-wl01
+
+# Reuse a vivolm llava_train base image (L40s, driver 535, cu12-compatible). We do
+# NOT rely on its python packages -- env.cluster.sh activates envs/jepa311 and
+# unsets LD_LIBRARY_PATH.
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+
+# juicefs mounts: deployment root (code + env + model + outputs) and the read-only
+# LLaVA-Video-178K source used to build the manifests.
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data        # code, conda env, model, jepa_data, outputs (11193960/*)
+- /data/vjuicefs_ai_ocr_wl/public_data        # LLaVA-Video-178K (read-only video source)
+
+tmpfs: true
+restartPolicy: Never
+
+run:
+  rdma: 'ib'
+  # --- FULL Phase A run (all pods x 4-GPU DDP) on the LLaVA-Video config. ---
+  command: "CONFIG=configs/vivolm_llava_video.yaml bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_entry.sh"
+  #
+  # --- DEBUG pod first (recommended): sets up env + sleeps so you can exec in and
+  #     verify rendezvous / a few steps before burning GPUs: ---
+  # command: "JOB_SLEEP=1 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_entry.sh"
+  #
+  # --- quick 2-step smoke via overrides (verify end-to-end, then stop): ---
+  # command: "CONFIG=configs/vivolm_llava_video.yaml EXTRA_OVERRIDES='train.max_steps=2 train.eval_every=100' bash /data/.../scripts/cluster/job_entry.sh"
+
+spec:
+  Worker:
+    # Number of nodes. Effective batch = batch_size(4) * grad_accum(4) * (num*4 GPUs).
+    #   num=2 -> 4*4*8 = 128 (== plan target). Scale lr / max_steps if you change num.
+    num: 2
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

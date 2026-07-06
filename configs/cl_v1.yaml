@@ -1,0 +1,6 @@
+# Cluster ablation on LLaVA-Video: V1 control (no mask, regress every position).
+_base_: vivolm_llava_video.yaml
+model:
+  mask_variant: v1
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_v1

@@ -1,0 +1,16 @@
+# Getting-started config: Phase A (V2.1) masked latent regression on a local
+# LLaVA-Video-178K subset (no SSv2 needed). Self-supervised -> no labels required
+# (linear-probe eval won't apply here; use nontrivial_check for a go/no-go signal).
+#
+# Manifests built by:
+#   scripts/prepare_llava_video.py --root <LLaVA-Video-178K> \
+#       --subsets 0_30_s_academic_v0_1 --out-dir <out> --max-videos 8000
+# video paths in the manifest are ABSOLUTE, so data_root is empty.
+_base_: vivolm_ssv2.yaml
+
+train:
+  train_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/train.jsonl
+  val_manifest:   /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/val.jsonl
+  data_root: ""
+  min_flow: 0.0                    # no optical-flow field in these manifests
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_v21

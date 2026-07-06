@@ -1,0 +1,6 @@
+# Cluster ablation: mask ratio 25%.
+_base_: vivolm_llava_video.yaml
+model:
+  mask_ratio: 0.25
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_mask25

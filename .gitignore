@@ -5,3 +5,9 @@ __pycache__/
 /data/
 /feats/
 .DS_Store
+.ipynb_checkpoints/
+# large training artifacts (checkpoints) must never be committed
+step_*/
+*.pt
+state.pt
+/outputs/

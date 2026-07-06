@@ -1,0 +1,6 @@
+# Cluster ablation (negative control): token-level random masking.
+_base_: vivolm_llava_video.yaml
+model:
+  mask_mode: patch
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_patch_mask

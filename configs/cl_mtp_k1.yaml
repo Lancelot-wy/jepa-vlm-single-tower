@@ -1,0 +1,6 @@
+# Cluster ablation: MTP with k=1 only.
+_base_: vivolm_llava_video.yaml
+model:
+  mtp_k: 1
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_mtp_k1

@@ -18,6 +18,7 @@ import time
 
 import torch
 from accelerate import Accelerator
+from accelerate.utils import DistributedDataParallelKwargs
 from accelerate.utils import set_seed
 from torch.utils.data import DataLoader
 
@@ -114,7 +115,13 @@ def main():
     cfg = load_config(args.config, args.overrides)
     tc = cfg.train
 
-    accelerator = Accelerator(gradient_accumulation_steps=tc.grad_accum)
+    # find_unused_parameters=True: some variants leave params gradient-free (e.g. v1
+    # never uses mask_embed; bidir/mtp-off skip the MTP heads), which otherwise trips
+    # DDP's reduction check. Small overhead; harmless for the fully-used v2.1 runs.
+    ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
+    accelerator = Accelerator(
+        gradient_accumulation_steps=tc.grad_accum, kwargs_handlers=[ddp_kwargs]
+    )
     set_seed(tc.seed)
     os.makedirs(tc.output_dir, exist_ok=True)
 
@@ -154,6 +161,10 @@ def main():
         with open(os.path.join(tc.output_dir, "config.json"), "w") as f:
             json.dump(cfg.to_dict(), f, indent=2)
     log_path = os.path.join(tc.output_dir, "log.jsonl")
+    tb_writer = None
+    if accelerator.is_main_process:
+        from torch.utils.tensorboard import SummaryWriter
+        tb_writer = SummaryWriter(os.path.join(tc.output_dir, "tb"))
 
     def save(step):
         if not accelerator.is_main_process:
@@ -212,6 +223,10 @@ def main():
             if accelerator.is_main_process:
                 with open(log_path, "a") as f:
                     f.write(json.dumps(rec) + "\n")
+                if tb_writer is not None:
+                    for k, v in rec.items():
+                        if k != "step" and isinstance(v, (int, float)):
+                            tb_writer.add_scalar(f"train/{k}", v, step)
 
         if val_dl is not None and step % tc.eval_every == 0:
             m = quick_eval(unwrapped, val_dl, cfg, accelerator, tc.eval_batches)
@@ -219,11 +234,17 @@ def main():
             if accelerator.is_main_process:
                 with open(log_path, "a") as f:
                     f.write(json.dumps({"step": step, **m}) + "\n")
+                if tb_writer is not None:
+                    for k, v in m.items():
+                        if isinstance(v, (int, float)):
+                            tb_writer.add_scalar(f"val/{k}", v, step)
 
         if step % tc.save_every == 0:
             save(step)
 
     save(step)
+    if tb_writer is not None:
+        tb_writer.close()
     accelerator.print("done")
 
 

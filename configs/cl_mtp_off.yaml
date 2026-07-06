@@ -1,0 +1,6 @@
+# Cluster ablation: MTP branch disabled.
+_base_: vivolm_llava_video.yaml
+model:
+  mtp_enabled: false
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_mtp_off

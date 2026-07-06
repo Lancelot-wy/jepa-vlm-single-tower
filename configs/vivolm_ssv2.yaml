@@ -1,0 +1,37 @@
+# Cluster config: Phase A (V2.1) masked latent regression on SSv2, tuned for the
+# vivolm platform (L40s 48GB, 4 GPU/node, multi-node via torchrun rendezvous).
+#
+# Only paths + a couple of L40s-specific knobs differ from configs/base.yaml.
+# Fill the three SSv2 paths below AFTER running scripts/prepare_ssv2.py once
+# (SSv2 is NOT present on the shared mounts yet -- see CLUSTER.md).
+_base_: base.yaml
+
+model:
+  # Local Qwen3-VL-2B weights on juicefs -> NO HF download (nodes are offline).
+  pretrained: /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-2B-Instruct
+  # flash_attention_2 is NOT installed in envs/jepa311; keep sdpa (correct + fits).
+  attn_implementation: sdpa
+
+train:
+  # --- SSv2 manifests + video dir (produced by scripts/prepare_ssv2.py) ---
+  # TODO(fill): point these at the SSv2 output once downloaded/prepared, e.g.
+  #   scripts/prepare_ssv2.py --anno-dir <ssv2>/anno --video-dir <ssv2>/videos \
+  #       --out-dir /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/ssv2
+  train_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/ssv2/train_flow.jsonl
+  val_manifest:   /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/ssv2/val.jsonl
+  data_root:      /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/ssv2/videos
+  # train_flow.jsonl carries per-clip optical flow (scripts/compute_flow.py). If you
+  # skip flow computation, set min_flow: 0.0 and use train.jsonl instead.
+  min_flow: 0.5
+
+  # --- L40s (48GB) throughput knobs ---
+  # 2B full bf16 + grad-checkpointing fits on 48GB; per-device batch 4 is safe.
+  # Effective batch = batch_size * grad_accum * (nodes*4 GPUs). With 3 nodes:
+  #   4 * 4 * 12 = 192  (>= plan target 128). grad_accum is overridable at launch
+  #   via GRAD_ACCUM= in scripts/cluster/train_multinode.sh.
+  batch_size: 4
+  grad_accum: 4
+  num_workers: 8
+
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_phase_a_v21
+  # resume: /data/.../outputs/jepa_phase_a_v21/step_2000   # uncomment to resume

@@ -1,0 +1,5 @@
+# Cluster ablation: frozen vision encoder (target space pinned).
+_base_: vivolm_llava_video.yaml
+train:
+  train_vision: false
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/jepa_llava_video_frozen_vit
