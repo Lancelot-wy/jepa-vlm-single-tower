@@ -39,6 +39,8 @@ MODELS=(
   "r2_varreg|$OUT/r2_varreg/config.json|$OUT/r2_varreg/step_2000"
   "r2_residual|$OUT/r2_residual/config.json|$OUT/r2_residual/step_2000"
   "r2_sft_baseline|$OUT/r2_sft_baseline/config.json|$OUT/r2_sft_baseline/step_2000"
+  "r2_v21_formal|$OUT/r2_v21_formal/config.json|$OUT/r2_v21_formal/step_8000"
+  "r2_varreg_formal|$OUT/r2_varreg_formal/config.json|$OUT/r2_varreg_formal/step_8000"
 )
 
 extract() {  # $1=config $2=ckptflag $3=manifest $4=transform $5=out [maxclips]

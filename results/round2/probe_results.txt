@@ -22,3 +22,9 @@ r2_sft_baseline random_reverse: layer27_frames           55.69%
 r2_frozen random_reverse: layer27_frames           57.76%
 r2_v21 random_reverse: layer27_frames           61.70%
 r2_residual random_reverse: layer27_frames           57.35%
+# temporal probe results  Tue Jul  7 10:53:42 CST 2026
+# temporal probe results  Tue Jul  7 10:53:42 CST 2026
+r2_varreg_formal random_shuffle: layer27_frames           65.01%
+r2_v21_formal random_shuffle: layer27_frames           63.56%
+r2_varreg_formal random_reverse: layer27_frames           59.01%
+r2_v21_formal random_reverse: layer27_frames           61.28%

@@ -64,9 +64,37 @@
 清晰分层(v21/varreg ≫ base/sft ≈ frozen/residual)。→ **probe 才是有效判据**;
 nontrivial_ratio 作为塌缩告警可保留,但不作优劣裁决。
 
+## 正式重跑(formal, 8000 步)
+
+v21 / varreg 满足"B、C > base 且 > E"判据 → 各跑一次 8000 步长跑
+(`configs/r2_{v21,varreg}_formal.yaml`,MTP off,min_flow=8.42,val@8000):
+
+| 臂 | reg_loss | target_std | adj_cos | copy_mse | ratio |
+|---|---|---|---|---|---|
+| r2_v21_formal | 0.065 | 0.288 | 0.984 | 0.042 | 1.538 |
+| r2_varreg_formal | 0.352 | 0.646 | 0.922 | 0.223 | 1.579 |
+
+- 长跑无塌缩:v21 target_std 0.241→0.288、varreg 0.616→0.646(方差稳住/略升)。
+
+时序 probe(top-1 %,与 2000 步对比):
+
+| 臂 | shuffle | reverse | Δreverse vs base | Δreverse vs sft |
+|---|---|---|---|---|
+| v21 (2000) | 68.94 | 61.70 | +4.56 | +6.01 |
+| **v21_formal (8000)** | 63.56 | **61.28** | **+4.14** | **+5.59** |
+| varreg (2000) | 67.08 | 60.46 | +3.32 | +4.77 |
+| **varreg_formal (8000)** | 65.01 | **59.01** | **+1.87** | **+3.32** |
+
+**判读**:reverse probe(时间方向敏感度,主时序判据)在长跑后基本不变——v21_formal
+61.28 ≈ 2000 步的 61.70,仍显著 > base(+4.14)、> sft(+5.59)。→ **回归目标带来的
+真实时序增益经得起 8000 步长跑**,Round-2 结论稳固。
+注意:shuffle probe 长跑后回落(v21 68.94→63.56,略低于 base 65.22),说明长跑把表征
+进一步特化到回归目标、牺牲了一点 shuffle 依赖的通用帧内容可分性;方向敏感的 reverse
+才是关键判据,已保住。
+
 ## 下一步(按方案)
 
-1. v21 / varreg 满足"B、C > base 且 > E" → 进入**正式重跑**(更长步数)+ **SSv2 背书**。
+1. formal 重跑已确认增益稳固;剩 **SSv2 背书**(降级为最终背书,不阻塞)。
 2. 补 **Diving48 类别 probe**(方案主判据),待数据代理/上传后用
    `scripts/prepare_diving48.py` + 在 `run_probes.sh` 追加类别 probe。
 3. residual / frozen 本轮不推进。
