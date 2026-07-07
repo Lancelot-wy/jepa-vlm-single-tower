@@ -46,7 +46,8 @@ def build_dataloaders(cfg: Config, tokenizer=None):
     )
     if tc.phase == "b":
         assert tokenizer is not None, "phase b needs a tokenizer"
-        train_ds = QAVideoDataset(tc.text_manifest, min_flow=tc.min_flow, training=True, **common)
+        train_ds = QAVideoDataset(tc.text_manifest, min_flow=tc.min_flow, training=True,
+                                  temporal_qa_ratio=tc.temporal_qa_ratio, **common)
         tokens_per_clip = tc.num_frames * mc.tokens_per_frame
         # special-token ids are wired in from the model config in main()
         collate = QACollator(tokenizer, {}, tokens_per_clip, tc.max_text_len)

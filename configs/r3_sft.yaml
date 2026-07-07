@@ -1,0 +1,8 @@
+# R3 主线终审 - 对照臂: 纯 CE SFT (lambda=0, v1 = 输入不被 [M] 污染, MTP off).
+# 与 r3_joint 同数据 (含 flow 过滤, 修复 Round-2 sft 用未过滤数据的混杂)、同 QA 混比、同步数.
+_base_: r3_joint.yaml
+model:
+  mask_variant: v1
+train:
+  lambda_reg: 0.0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_sft

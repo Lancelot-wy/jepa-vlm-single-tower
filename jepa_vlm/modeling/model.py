@@ -35,6 +35,7 @@ class JepaOutput:
     reg_loss: torch.Tensor | None = None
     mtp_loss: torch.Tensor | None = None
     ce_loss: torch.Tensor | None = None
+    ce_per_sample: torch.Tensor | None = None  # (B,) answer-token CE; used for likelihood scoring
     metrics: dict | None = None
     hidden_states: tuple | None = None
     token_mask: torch.Tensor | None = None
@@ -280,16 +281,23 @@ class JepaQwen3VL(nn.Module):
         ce_loss = None
         if labels is not None:
             logits = self.lm_head(seq_hidden)
-            ce_loss = F.cross_entropy(
-                logits[:, :-1].reshape(-1, logits.shape[-1]).float(),
-                labels[:, 1:].reshape(-1),
+            # unreduced CE, then the same global token-mean as before plus a per-sample
+            # mean (likelihood scoring for QA eval, e.g. temporal_qa_eval)
+            ce_tok = F.cross_entropy(
+                logits[:, :-1].float().transpose(1, 2),
+                labels[:, 1:],
                 ignore_index=-100,
-            )
+                reduction="none",
+            )  # (B, L-1), zeros at ignored positions
+            valid = labels[:, 1:] != -100
+            ce_loss = ce_tok.sum() / valid.sum().clamp_min(1)
+            ce_per_sample = (ce_tok.sum(1) / valid.sum(1).clamp_min(1)).detach()
             metrics["ce_loss"] = float(ce_loss.detach())
             lam = self.cfg.train.lambda_reg
             loss = ce_loss + lam * loss if loss is not None else ce_loss
         return JepaOutput(
-            loss=loss, reg_loss=reg_loss, mtp_loss=mtp_loss, ce_loss=ce_loss, metrics=metrics,
+            loss=loss, reg_loss=reg_loss, mtp_loss=mtp_loss, ce_loss=ce_loss,
+            ce_per_sample=ce_per_sample if labels is not None else None, metrics=metrics,
             hidden_states=getattr(outputs, "hidden_states", None),
             token_mask=token_mask, target=target,
         )

@@ -102,6 +102,8 @@ class TrainConfig:
     lambda_reg: float = 0.2            # L = L_CE + lambda * L_reg   (phase b only)
     text_manifest: str = ""            # phase b QA manifest (jsonl with video/question/answer)
     max_text_len: int = 256
+    temporal_qa_ratio: float = 0.3     # phase b: fraction of samples replaced by on-the-fly
+                                       # temporal-order QA (shuffle/reverse, yes/no)
 
 
 @dataclass

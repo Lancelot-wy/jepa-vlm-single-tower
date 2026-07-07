@@ -1,0 +1,16 @@
+# R3 主线终审 - 联合臂: L = L_CE + 0.2 * L_reg (v2.1 mask, MTP off, ViT 放开).
+# 与 r3_sft 严格同数据同步数; 唯一差异 = 回归目标包 (mask 输入 + reg loss).
+# min_flow 在启动时覆盖 (qa_train_flow.jsonl 带 flow 字段, 与 Phase A 同阈值).
+_base_: r2_base.yaml
+model:
+  mask_variant: v2.1
+train:
+  phase: b
+  lambda_reg: 0.2
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/qa_train_flow.jsonl
+  temporal_qa_ratio: 0.3
+  max_text_len: 256
+  max_steps: 4000
+  warmup_steps: 400
+  save_every: 1000
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_joint

@@ -109,3 +109,59 @@ done
 | D 的 ratio < 1 | 学到了超越抄帧的动力学（最强信号） | 残差形态并入主配置 |
 
 任何臂出现 `target_std → 0`（完全塌缩）立即停该臂，不浪费卡时。
+
+---
+
+# Round 3：主线终审（Phase B pilot，联合 vs 纯 CE）
+
+Round-2 已证明表征增益真实存在（时序 probe +4~4.6pp，非"见过视频"效应，8000 步稳固）。
+本轮直接回答总命题：**加了回归目标的联合训练，在时序任务上能否打赢同配置的纯 CE？**
+probe 链（Diving48 / ckpt 扫描）降级为诊断工具：失败时归因用，成功时补机理证据用，
+**不阻塞本轮**。
+
+## 实验臂（唯一差异 = 回归目标包）
+
+| 臂 | 配置 | loss | 输入 |
+|---|---|---|---|
+| r3_joint | `configs/r3_joint.yaml` | CE + 0.2·reg | v2.1 mask（50% 帧被 [M] 遮蔽） |
+| r3_sft | `configs/r3_sft.yaml` | 纯 CE | 干净视频（v1 无 mask） |
+
+同数据（qa_train_flow.jsonl，**已修复 Round-2 sft 未过滤的混杂**）、同时序 QA 混比
+（temporal_qa_ratio=0.3，打乱/倒放判别在线生成）、同 4000 步、MTP off、ViT 放开。
+save_every=1000 → 每档 ckpt 都可评，顺带回答"联合训练的最优停点"。
+
+## 运行
+
+```bash
+# 0) 一次性：给 QA manifest 补 flow 字段（与 Phase A 同一个脚本、同一阈值）
+python scripts/compute_flow.py --manifest $DATA/llava_video/qa_train.jsonl \
+    --out $DATA/llava_video/qa_train_flow.jsonl --method framediff --workers 16
+
+# 1) 两臂训练（MIN_FLOW 用 Phase A 定过的阈值，如 8.42）
+CONFIG=configs/r3_joint.yaml EXTRA_OVERRIDES='train.min_flow=8.42' bash scripts/cluster/train_multinode.sh
+CONFIG=configs/r3_sft.yaml   EXTRA_OVERRIDES='train.min_flow=8.42' bash scripts/cluster/train_multinode.sh
+
+# 2) held-out 时序 QA 评测（单卡；对每档 ckpt 各跑一次，两臂同一 manifest 同一 seed）
+python -m jepa_vlm.probes.temporal_qa_eval \
+    --config <outputs>/r3_joint/config.json --ckpt <outputs>/r3_joint/step_4000 \
+    --manifest $DATA/llava_video/val.jsonl --max-clips 500
+```
+
+## 读数与判定（三层，由近及远）
+
+1. **训练稳定性**（跑的过程中就看）：joint 臂的 ce_loss 与 reg_loss 曲线。若 CE 明显高于
+   sft 臂且不收敛 → 梯度冲突（方案第 6 节风险项），先调小 λ（0.1）或 mask_ratio 再重跑。
+2. **held-out 时序 QA**（主判定，零下载）：`temporal_qa_eval` 的 overall 及 reverse/shuffle
+   分项。N=500 时二项噪声 ~2.2pp。**判定：joint − sft ≥ +3pp 且各档 ckpt 方向一致 → 主线
+   修改 work**；差距 <2pp 或反向 → 不下结论，进入诊断（Diving48 probe + ckpt 扫描归因）。
+   注意：不要拿未训练 base 的绝对值来比——base 没见过 4-token pooled 布局，属于分布外。
+3. **正式 benchmark**（结论对外前必补）：lmms-eval 跑 TempCompass / Vinoground / TOMATO
+   （时序主指标）+ VideoMME / MVBench（不退化检验）。数据集需开发机代理下载后传集群，
+   与 1)/2) 并行准备，不阻塞判定。
+
+## 诊断工具（不通过时再启用）
+
+- Diving48 类别 probe：区分"动作语义"与"低级运动方向"（下载好即可跑，run_probes.sh 追加）。
+- ckpt 扫描：formal 跑的 2k/4k/6k/8k 档 + 本轮每千步档，画 probe/QA 随步数曲线找退化点。
+- 已知注意事项：joint 臂的 CE 在被 mask 的视频上训练（这是"回归目标包"的一部分）；若怀疑
+  mask 本身伤 QA，可加第三臂 r3_joint + mask_ratio=0.25 消融。
