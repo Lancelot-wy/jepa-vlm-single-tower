@@ -37,6 +37,13 @@ Phase B pilot:同数据(qa_train_flow.jsonl, min_flow=8.42)、同 QA 混比(temp
 
 **结论:回归目标确实提升了对时序顺序的敏感度(与 Round-2 probe 一致),但被决策阈值的 yes 偏置掩盖在 overall 上。非负结果,判据被 confound。**
 
+## readout #3 — 公开 benchmark(MVBench / TempCompass)
+
+全量 MCQ 评测见 `benchmark_mcq.md`(原始数字 `mcq_eval_results.txt`)。两臂 overall
+等价:MVBench 49.59 vs 49.56(+0.03pp)、Tempcompass 57.78 vs 58.16(−0.38pp),均在噪声内。
+held-out 上的时序敏感度增益**未泛化到公开 benchmark**,最考时序的类(Object Shuffle/Action
+Sequence)joint 反而略低 → 印证增益真实但小且脆弱、依赖任务格式(yes/no vs N 选一 MCQ)。
+
 ## 下一步(诊断)
 1. 拆偏置:看 CE(yes) vs CE(no) 的 margin 分布 / 调判定阈值,或平衡答案分布后重评。
 2. Diving48 类别 probe(方案主判据,待数据),区分「动作语义」vs「低级运动方向」。

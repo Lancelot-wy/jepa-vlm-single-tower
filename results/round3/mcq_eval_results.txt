@@ -1,0 +1,56 @@
+# MCQ eval  Wed Jul  8 18:04:46 CST 2026  (step=4000 max_clips=0)
+# MCQ eval  Wed Jul  8 18:04:47 CST 2026  (step=4000 max_clips=0)
+r3_joint step_4000 MVBench: overall=1981/3995 = 49.59%
+    [MVBench]   Action Antonym               142/200 = 71.00%
+    [MVBench]   Action Count                 85/200 = 42.50%
+    [MVBench]   Action Localization          66/200 = 33.00%
+    [MVBench]   Action Prediction            100/200 = 50.00%
+    [MVBench]   Action Sequence              113/200 = 56.50%
+    [MVBench]   Character Order              107/200 = 53.50%
+    [MVBench]   Counterfactual Inference     76/195 = 38.97%
+    [MVBench]   Egocentric Navigation        74/200 = 37.00%
+    [MVBench]   Episodic Reasoning           104/200 = 52.00%
+    [MVBench]   Fine-grained Action          81/200 = 40.50%
+    [MVBench]   Fine-grained Pose            83/200 = 41.50%
+    [MVBench]   Moving Attribute             118/200 = 59.00%
+    [MVBench]   Moving Count                 92/200 = 46.00%
+    [MVBench]   Moving Direction             40/200 = 20.00%
+    [MVBench]   Object Existence             108/200 = 54.00%
+    [MVBench]   Object Interaction           129/200 = 64.50%
+    [MVBench]   Object Shuffle               46/200 = 23.00%
+    [MVBench]   Scene Transition             174/200 = 87.00%
+    [MVBench]   State Change                 97/200 = 48.50%
+    [MVBench]   Unexpected Action            146/200 = 73.00%
+r3_sft step_4000 MVBench: overall=1980/3995 = 49.56%
+    [MVBench]   Action Antonym               139/200 = 69.50%
+    [MVBench]   Action Count                 89/200 = 44.50%
+    [MVBench]   Action Localization          62/200 = 31.00%
+    [MVBench]   Action Prediction            103/200 = 51.50%
+    [MVBench]   Action Sequence              118/200 = 59.00%
+    [MVBench]   Character Order              105/200 = 52.50%
+    [MVBench]   Counterfactual Inference     72/195 = 36.92%
+    [MVBench]   Egocentric Navigation        73/200 = 36.50%
+    [MVBench]   Episodic Reasoning           104/200 = 52.00%
+    [MVBench]   Fine-grained Action          83/200 = 41.50%
+    [MVBench]   Fine-grained Pose            88/200 = 44.00%
+    [MVBench]   Moving Attribute             120/200 = 60.00%
+    [MVBench]   Moving Count                 86/200 = 43.00%
+    [MVBench]   Moving Direction             35/200 = 17.50%
+    [MVBench]   Object Existence             108/200 = 54.00%
+    [MVBench]   Object Interaction           128/200 = 64.00%
+    [MVBench]   Object Shuffle               55/200 = 27.50%
+    [MVBench]   Scene Transition             172/200 = 86.00%
+    [MVBench]   State Change                 93/200 = 46.50%
+    [MVBench]   Unexpected Action            147/200 = 73.50%
+r3_sft step_4000 Tempcompass: overall=919/1580 = 58.16%
+r3_joint step_4000 Tempcompass: overall=913/1580 = 57.78%
+ 93.79%
+    [Tempcompass]   mcq-attribute_change         154/288 = 53.47%
+    [Tempcompass]   mcq-direction                149/335 = 44.48%
+    [Tempcompass]   mcq-order                    160/302 = 52.98%
+    [Tempcompass]   mcq-speed                    139/317 = 43.85%
+    [Tempcompass]   mcq-action                   317/338 = 93.79%
+    [Tempcompass]   mcq-attribute_change         155/288 = 53.82%
+    [Tempcompass]   mcq-direction                147/335 = 43.88%
+    [Tempcompass]   mcq-order                    163/302 = 53.97%
+    [Tempcompass]   mcq-speed                    131/317 = 41.32%
