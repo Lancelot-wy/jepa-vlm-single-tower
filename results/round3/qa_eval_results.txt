@@ -1,0 +1,9 @@
+# temporal QA eval  Wed Jul  8 10:32:01 CST 2026  (max_clips=500 seed=0)
+r3_sft step_1000: overall=240/483 = 49.69%  (binomial se ~2.3pp) | none     205/242 = 84.71% | shuffle  14/120 = 11.67% | reverse  21/121 = 17.36%
+r3_joint step_1000: overall=248/483 = 51.35%  (binomial se ~2.3pp) | none     224/242 = 92.56% | shuffle  11/120 = 9.17% | reverse  13/121 = 10.74%
+r3_joint step_2000: overall=242/483 = 50.10%  (binomial se ~2.3pp) | none     197/242 = 81.40% | shuffle  23/120 = 19.17% | reverse  22/121 = 18.18%
+r3_sft step_2000: overall=237/483 = 49.07%  (binomial se ~2.3pp) | none     225/242 = 92.98% | shuffle  5/120 = 4.17% | reverse  7/121 = 5.79%
+r3_sft step_3000: overall=237/483 = 49.07%  (binomial se ~2.3pp) | none     225/242 = 92.98% | shuffle  5/120 = 4.17% | reverse  7/121 = 5.79%
+r3_joint step_3000: overall=242/483 = 50.10%  (binomial se ~2.3pp) | none     197/242 = 81.40% | shuffle  23/120 = 19.17% | reverse  22/121 = 18.18%
+r3_sft step_4000: overall=237/483 = 49.07%  (binomial se ~2.3pp) | none     225/242 = 92.98% | shuffle  5/120 = 4.17% | reverse  7/121 = 5.79%
+r3_joint step_4000: overall=242/483 = 50.10%  (binomial se ~2.3pp) | none     197/242 = 81.40% | shuffle  23/120 = 19.17% | reverse  22/121 = 18.18%
