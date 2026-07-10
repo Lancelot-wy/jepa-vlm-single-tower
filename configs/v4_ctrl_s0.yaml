@@ -1,0 +1,5 @@
+# V4 对照臂: 纯 CE SFT, seed 0 (= r3_sft 重跑, 固定种子协议; 所有 V4 臂的机制基准).
+_base_: r3_sft.yaml
+train:
+  seed: 0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_ctrl_s0

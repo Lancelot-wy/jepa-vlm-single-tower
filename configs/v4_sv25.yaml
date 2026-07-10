@@ -1,0 +1,8 @@
+# V4 消融: 单视图 (r3_joint 原方式) 但 mask 降到 25% —— 连接 r3(50%单视图) 与 dv25,
+# 回答 "r3 的弱结果是 mask 太强还是单视图 CE 被污染".
+_base_: r3_joint.yaml
+model:
+  mask_ratio: 0.25
+train:
+  seed: 0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_sv25

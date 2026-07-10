@@ -1,0 +1,11 @@
+# V4 主线 S1: 帧间预测辅助 loss —— clean 输入 (v1 无 mask), CE + 0.2 * MTP(k=1).
+# hidden[t] 经独立 MLP 预测 target[t+1] (下一帧 latent), 即 "在 ViT 之后帧与帧之间加 loss".
+_base_: r3_joint.yaml
+model:
+  mask_variant: v1
+  reg_enabled: false
+  mtp_enabled: true
+  mtp_k: 1
+train:
+  seed: 0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_mtp1

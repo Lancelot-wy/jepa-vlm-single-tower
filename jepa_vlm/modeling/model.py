@@ -212,9 +212,56 @@ class JepaQwen3VL(nn.Module):
                 h_in, deepstack, target, token_mask if use_mask else None,
                 output_hidden_states, normed_online,
             )
+        if use_mask and mc.dual_view != "off" and labels is not None:
+            return self._forward_dual_view(
+                h, h_in, deepstack, target, token_mask,
+                input_ids, attention_mask, labels, output_hidden_states, normed_online,
+            )
         return self._forward_with_text(
             h_in, deepstack, target, token_mask if use_mask else None,
             input_ids, attention_mask, labels, output_hidden_states, normed_online,
+        )
+
+    def _forward_dual_view(self, h_clean, h_masked, deepstack, target, token_mask,
+                           input_ids, attention_mask, labels, output_hidden_states,
+                           normed_online):
+        """V4 dual-view: the CE view never sees [M] (train == deploy distribution);
+        the masked view carries the latent-prediction pressure.
+
+        dual_view=reg: L = CE(clean) + lambda_reg * (reg+mtp)(masked, visual-only pass)
+        dual_view=ce : L = 0.5*(CE(clean) + CE(masked)); no regression (R-Drop-style
+                       consistency control arm - isolates regularization from prediction).
+        """
+        mc = self.cfg.model
+        out_ce = self._forward_with_text(
+            h_clean, deepstack, target, None,
+            input_ids, attention_mask, labels, output_hidden_states, normed_online,
+            compute_reg=False,
+        )
+        if mc.dual_view == "ce":
+            out_m = self._forward_with_text(
+                h_masked, deepstack, target, token_mask,
+                input_ids, attention_mask, labels, False, normed_online,
+                compute_reg=False,
+            )
+            loss = 0.5 * (out_ce.ce_loss + out_m.ce_loss)
+            metrics = dict(out_ce.metrics or {})
+            metrics["ce_loss_masked"] = float(out_m.ce_loss.detach())
+            return JepaOutput(
+                loss=loss, ce_loss=out_ce.ce_loss, ce_per_sample=out_ce.ce_per_sample,
+                metrics=metrics, hidden_states=out_ce.hidden_states,
+                token_mask=token_mask, target=target,
+            )
+        out_reg = self._forward_visual_only(
+            h_masked, deepstack, target, token_mask, False, normed_online,
+        )
+        lam = self.cfg.train.lambda_reg
+        loss = out_ce.ce_loss + lam * out_reg.loss if out_reg.loss is not None else out_ce.ce_loss
+        metrics = {**(out_reg.metrics or {}), "ce_loss": float(out_ce.ce_loss.detach())}
+        return JepaOutput(
+            loss=loss, reg_loss=out_reg.reg_loss, mtp_loss=out_reg.mtp_loss,
+            ce_loss=out_ce.ce_loss, ce_per_sample=out_ce.ce_per_sample, metrics=metrics,
+            hidden_states=out_ce.hidden_states, token_mask=token_mask, target=target,
         )
 
     def _forward_visual_only(self, h_in, deepstack, target, token_mask,
@@ -252,7 +299,7 @@ class JepaQwen3VL(nn.Module):
 
     def _forward_with_text(self, h_in, deepstack, target, token_mask,
                            input_ids, attention_mask, labels, output_hidden_states,
-                           normed_online=None):
+                           normed_online=None, compute_reg=True):
         B, T, P, D = h_in.shape
         device = h_in.device
         video_token_id = self.hf_config.video_token_id
@@ -275,8 +322,11 @@ class JepaQwen3VL(nn.Module):
         )
         seq_hidden = outputs.last_hidden_state
         hidden = seq_hidden[video_mask].reshape(B, T, P, D)
-        loss, reg_loss, mtp_loss, metrics = self._compute_losses(
-            hidden, target, token_mask, normed_online)
+        if compute_reg:
+            loss, reg_loss, mtp_loss, metrics = self._compute_losses(
+                hidden, target, token_mask, normed_online)
+        else:
+            loss, reg_loss, mtp_loss, metrics = None, None, None, {}
 
         ce_loss = None
         if labels is not None:
@@ -323,7 +373,9 @@ class JepaQwen3VL(nn.Module):
         B, T, P, D = hidden.shape
         pred = self.reg_head(hidden).float()
 
-        if mc.residual_target and token_mask is not None:
+        if not mc.reg_enabled:
+            reg_loss = None
+        elif mc.residual_target and token_mask is not None:
             # target = h_t - h_src: the copy solution is exactly "predict zero", so any
             # ratio below 1 vs copy_mse now reflects genuinely modeled dynamics.
             frame_masked = token_mask.all(dim=-1)
@@ -360,7 +412,14 @@ class JepaQwen3VL(nn.Module):
             if losses:
                 mtp_loss = torch.stack(losses).mean()
 
-        loss = reg_loss if mtp_loss is None else reg_loss + mtp_loss
+        if reg_loss is None and mtp_loss is None:
+            loss = None
+        elif reg_loss is None:
+            loss = mtp_loss
+        elif mtp_loss is None:
+            loss = reg_loss
+        else:
+            loss = reg_loss + mtp_loss
 
         var_metrics = {}
         if mc.var_reg_weight > 0 and normed_online is not None:
@@ -368,11 +427,11 @@ class JepaQwen3VL(nn.Module):
             # encoder through normed_online and counters directional collapse.
             std = normed_online.reshape(-1, D).std(dim=0)
             var_loss = F.relu(mc.var_reg_gamma - std).mean()
-            loss = loss + mc.var_reg_weight * var_loss
+            loss = var_loss * mc.var_reg_weight if loss is None else loss + mc.var_reg_weight * var_loss
             var_metrics["var_loss"] = float(var_loss.detach())
 
         metrics = {
-            "reg_loss": float(reg_loss.detach()),
+            **({"reg_loss": float(reg_loss.detach())} if reg_loss is not None else {}),
             **mtp_metrics,
             **var_metrics,
             **self._monitors(target, token_mask),

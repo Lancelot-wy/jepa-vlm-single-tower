@@ -1,0 +1,7 @@
+# V4 组合臂: dual-view masked reg + 下一帧 MTP —— 两个想法叠加 (S1+S2).
+_base_: v4_dv25_s0.yaml
+model:
+  mtp_enabled: true
+  mtp_k: 1
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv25_mtp1

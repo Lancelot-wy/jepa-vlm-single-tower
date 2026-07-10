@@ -1,0 +1,6 @@
+# V4 S2 消融: dual-view + mask 50% (与 r3_joint 单视图 50% 对齐 ratio, 分离 dual-view 效应).
+_base_: v4_dv25_s0.yaml
+model:
+  mask_ratio: 0.5
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv50

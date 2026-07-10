@@ -1,0 +1,5 @@
+# V4 S2 消融: lambda 0.5 (回归项权重敏感性).
+_base_: v4_dv25_s0.yaml
+train:
+  lambda_reg: 0.5
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv25_lam05

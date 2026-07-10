@@ -1,0 +1,9 @@
+# V4 主线 S2: dual-view (clean CE + masked reg), mask 25%, lambda 0.2, seed 0.
+# CE 视图永不见 [M] (训练=部署分布); masked 视图走纯视觉 reg 前向 (64 token, 便宜).
+_base_: r3_joint.yaml
+model:
+  dual_view: reg
+  mask_ratio: 0.25
+train:
+  seed: 0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv25_s0

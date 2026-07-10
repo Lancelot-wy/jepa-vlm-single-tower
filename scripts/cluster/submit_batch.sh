@@ -20,7 +20,7 @@ cd "$PROJECT_ROOT"
 VTRAINING="/data/vtraining_04/code/vtraining/cli/vtraining"
 IMAGE="registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110"
 BUSINESS="VideoFoundationModel1b-wl01"
-NODES=2
+NODES="${NODES:-2}"   # V4 validation: NODES=1 => one experiment per 4xL40S node
 
 DRY_RUN=0
 EXPS=()

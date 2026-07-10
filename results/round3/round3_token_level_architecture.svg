@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1220" viewBox="0 0 1600 1220">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f73d8"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5c6670"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c26a00"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c73522"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2933; }
+      .title { font-size: 28px; font-weight: 700; }
+      .section { font-size: 20px; font-weight: 700; }
+      .label { font-size: 16px; font-weight: 650; }
+      .small { font-size: 14px; }
+      .tiny { font-size: 12px; }
+      .box-blue { fill: #eaf2ff; stroke: #2f73d8; stroke-width: 2; rx: 12; }
+      .box-gray { fill: #f5f7fa; stroke: #7b8794; stroke-width: 2; rx: 12; }
+      .box-orange { fill: #fff4e5; stroke: #c26a00; stroke-width: 2; rx: 12; }
+      .box-green { fill: #e8f7ee; stroke: #2f9e5f; stroke-width: 2; rx: 12; }
+      .box-red { fill: #fde8e5; stroke: #c73522; stroke-width: 2; rx: 12; }
+      .token { fill: #ffffff; stroke: #7b8794; stroke-width: 1.6; rx: 8; }
+      .token-mask { fill: #fde8e5; stroke: #c73522; stroke-width: 1.8; rx: 8; }
+      .panel-gray { fill: #fbfcfe; stroke: #9aa5b1; stroke-width: 2; rx: 18; }
+      .panel-orange { fill: #fffaf0; stroke: #c26a00; stroke-width: 2; rx: 18; }
+      .arrow-blue { stroke: #2f73d8; stroke-width: 2.8; fill: none; marker-end: url(#arrow-blue); }
+      .arrow-gray { stroke: #5c6670; stroke-width: 2.4; fill: none; marker-end: url(#arrow-gray); }
+      .arrow-orange { stroke: #c26a00; stroke-width: 2.4; fill: none; marker-end: url(#arrow-orange); }
+      .arrow-red { stroke: #c73522; stroke-width: 2.6; fill: none; marker-end: url(#arrow-red); }
+      .dash-orange { stroke: #c26a00; stroke-width: 2.2; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow-orange); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1220" fill="#ffffff"/>
+  <text x="800" y="48" text-anchor="middle" class="title">Round 3 架构：非 Mask SFT vs Masked Latent Regression</text>
+
+  <rect x="60" y="80" width="1480" height="220" class="box-blue"/>
+  <text x="90" y="116" class="section">共享视觉编码</text>
+  <rect x="110" y="150" width="210" height="72" class="box-blue"/>
+  <text x="215" y="180" text-anchor="middle" class="label">Video frames</text>
+  <text x="215" y="204" text-anchor="middle" class="small">T = 16</text>
+  <rect x="390" y="150" width="250" height="72" class="box-blue"/>
+  <text x="515" y="178" text-anchor="middle" class="label">Qwen3-VL Visual Encoder</text>
+  <text x="515" y="202" text-anchor="middle" class="small">ViT + merger + DeepStack</text>
+  <rect x="710" y="150" width="230" height="72" class="box-blue"/>
+  <text x="825" y="178" text-anchor="middle" class="label">2x2 pooling / frame</text>
+  <text x="825" y="202" text-anchor="middle" class="small">h ∈ T × 4 × D</text>
+  <rect x="1010" y="132" width="470" height="108" class="box-blue"/>
+  <text x="1245" y="158" text-anchor="middle" class="label">token-level visual latent h</text>
+  <rect x="1040" y="178" width="86" height="42" class="token"/>
+  <text x="1083" y="195" text-anchor="middle" class="tiny">F1</text>
+  <text x="1083" y="213" text-anchor="middle" class="tiny">t11 t12 t13 t14</text>
+  <rect x="1142" y="178" width="86" height="42" class="token"/>
+  <text x="1185" y="195" text-anchor="middle" class="tiny">F2</text>
+  <text x="1185" y="213" text-anchor="middle" class="tiny">t21 t22 t23 t24</text>
+  <rect x="1244" y="178" width="86" height="42" class="token"/>
+  <text x="1287" y="195" text-anchor="middle" class="tiny">F3</text>
+  <text x="1287" y="213" text-anchor="middle" class="tiny">t31 t32 t33 t34</text>
+  <text x="1360" y="205" text-anchor="middle" class="label">...</text>
+  <rect x="1394" y="178" width="70" height="42" class="token"/>
+  <text x="1429" y="195" text-anchor="middle" class="tiny">F16</text>
+  <text x="1429" y="213" text-anchor="middle" class="tiny">4 tokens</text>
+  <path d="M 320 186 H 390" class="arrow-blue"/>
+  <path d="M 640 186 H 710" class="arrow-blue"/>
+  <path d="M 940 186 H 1010" class="arrow-blue"/>
+
+  <rect x="60" y="340" width="690" height="800" class="panel-gray"/>
+  <text x="405" y="378" text-anchor="middle" class="section">A. r3_sft：非 Mask / 纯 CE</text>
+  <rect x="120" y="420" width="570" height="80" class="box-gray"/>
+  <text x="405" y="450" text-anchor="middle" class="label">clean visual tokens</text>
+  <text x="405" y="474" text-anchor="middle" class="small">不做 mask，直接作为视觉输入</text>
+  <rect x="148" y="520" width="92" height="42" class="token"/>
+  <text x="194" y="545" text-anchor="middle" class="tiny">F1 clean</text>
+  <rect x="256" y="520" width="92" height="42" class="token"/>
+  <text x="302" y="545" text-anchor="middle" class="tiny">F2 clean</text>
+  <rect x="364" y="520" width="92" height="42" class="token"/>
+  <text x="410" y="545" text-anchor="middle" class="tiny">F3 clean</text>
+  <text x="495" y="548" text-anchor="middle" class="label">...</text>
+  <rect x="542" y="520" width="92" height="42" class="token"/>
+  <text x="588" y="545" text-anchor="middle" class="tiny">F16 clean</text>
+  <rect x="175" y="605" width="460" height="64" class="box-gray"/>
+  <text x="405" y="632" text-anchor="middle" class="label">[clean visual tokens] + [QA text tokens]</text>
+  <text x="405" y="654" text-anchor="middle" class="small">拼接后送入 LLM</text>
+  <rect x="210" y="715" width="390" height="76" class="box-gray"/>
+  <text x="405" y="746" text-anchor="middle" class="label">Qwen3-VL LLM Backbone</text>
+  <text x="405" y="770" text-anchor="middle" class="small">输出 text hidden states</text>
+  <rect x="250" y="835" width="310" height="62" class="box-gray"/>
+  <text x="405" y="872" text-anchor="middle" class="label">LM Head → CE loss</text>
+  <rect x="250" y="920" width="310" height="58" class="box-red"/>
+  <text x="405" y="955" text-anchor="middle" class="label">Final loss: L = CE</text>
+  <path d="M 405 500 V 520" class="arrow-gray"/>
+  <path d="M 405 562 V 605" class="arrow-gray"/>
+  <path d="M 405 669 V 715" class="arrow-gray"/>
+  <path d="M 405 791 V 835" class="arrow-gray"/>
+  <path d="M 405 897 V 920" class="arrow-red"/>
+
+  <rect x="850" y="340" width="690" height="800" class="panel-orange"/>
+  <text x="1195" y="378" text-anchor="middle" class="section">B. r3_joint：Tube Mask + Latent Regression</text>
+  <rect x="900" y="415" width="250" height="70" class="box-orange"/>
+  <text x="1025" y="445" text-anchor="middle" class="label">Input branch</text>
+  <text x="1025" y="468" text-anchor="middle" class="small">h 用于构造 masked input</text>
+  <rect x="1250" y="415" width="240" height="70" class="box-orange"/>
+  <text x="1370" y="443" text-anchor="middle" class="label">Target branch</text>
+  <text x="1370" y="466" text-anchor="middle" class="small">target = LN(h).detach()</text>
+  <rect x="910" y="520" width="580" height="88" class="box-orange"/>
+  <text x="1200" y="548" text-anchor="middle" class="label">frame-level tube mask: 50% frames</text>
+  <text x="1200" y="572" text-anchor="middle" class="small">随机选帧；每个 masked frame 的 4 个 latent token 全部替换为 [M]</text>
+  <rect x="950" y="628" width="92" height="42" class="token"/>
+  <text x="996" y="653" text-anchor="middle" class="tiny">F1 clean</text>
+  <rect x="1058" y="628" width="104" height="42" class="token-mask"/>
+  <text x="1110" y="646" text-anchor="middle" class="tiny">F2 masked</text>
+  <text x="1110" y="664" text-anchor="middle" class="tiny">[M] [M] [M] [M]</text>
+  <rect x="1178" y="628" width="92" height="42" class="token"/>
+  <text x="1224" y="653" text-anchor="middle" class="tiny">F3 clean</text>
+  <rect x="1286" y="628" width="104" height="42" class="token-mask"/>
+  <text x="1338" y="646" text-anchor="middle" class="tiny">F4 masked</text>
+  <text x="1338" y="664" text-anchor="middle" class="tiny">[M] [M] [M] [M]</text>
+  <text x="1432" y="656" text-anchor="middle" class="label">...</text>
+  <rect x="970" y="705" width="460" height="58" class="box-green"/>
+  <text x="1200" y="729" text-anchor="middle" class="label">DeepStack side features</text>
+  <text x="1200" y="750" text-anchor="middle" class="small">masked positions = 0，避免真实视觉泄漏</text>
+  <rect x="1000" y="800" width="400" height="70" class="box-orange"/>
+  <text x="1200" y="828" text-anchor="middle" class="label">Qwen3-VL LLM Backbone</text>
+  <text x="1200" y="852" text-anchor="middle" class="small">masked visual tokens + QA text tokens</text>
+  <rect x="910" y="902" width="250" height="58" class="box-orange"/>
+  <text x="1035" y="925" text-anchor="middle" class="label">Reg Head</text>
+  <text x="1035" y="945" text-anchor="middle" class="small">video hidden → pred latent</text>
+  <rect x="1240" y="902" width="230" height="58" class="box-orange"/>
+  <text x="1355" y="925" text-anchor="middle" class="label">LM Head</text>
+  <text x="1355" y="945" text-anchor="middle" class="small">text hidden → logits</text>
+  <rect x="885" y="985" width="295" height="58" class="box-red"/>
+  <text x="1032" y="1008" text-anchor="middle" class="label">Masked latent MSE</text>
+  <text x="1032" y="1028" text-anchor="middle" class="small">MSE(pred[masked], target[masked])</text>
+  <rect x="1240" y="985" width="230" height="58" class="box-red"/>
+  <text x="1355" y="1010" text-anchor="middle" class="label">CE loss</text>
+  <text x="1355" y="1030" text-anchor="middle" class="small">answer tokens only</text>
+  <rect x="1045" y="1080" width="335" height="58" class="box-red"/>
+  <text x="1212" y="1115" text-anchor="middle" class="label">Final loss: L = CE + 0.2 × reg_loss</text>
+  <path d="M 1150 450 H 1250" class="dash-orange"/>
+  <path d="M 1025 485 V 520" class="arrow-orange"/>
+  <path d="M 1200 608 V 628" class="arrow-orange"/>
+  <path d="M 1200 670 V 705" class="arrow-orange"/>
+  <path d="M 1200 763 V 800" class="arrow-orange"/>
+  <path d="M 1160 870 L 1035 902" class="arrow-orange"/>
+  <path d="M 1240 870 L 1355 902" class="arrow-orange"/>
+  <path d="M 1035 960 V 985" class="arrow-orange"/>
+  <path d="M 1355 960 V 985" class="arrow-orange"/>
+  <path d="M 1370 485 C 1500 610 1470 900 1180 1010" class="dash-orange"/>
+  <path d="M 1032 1043 L 1160 1080" class="arrow-red"/>
+  <path d="M 1355 1043 L 1270 1080" class="arrow-red"/>
+
+  <text x="800" y="1185" text-anchor="middle" class="small">Round 3 setting: MTP off · ViT trainable · LLM full fine-tuning · LM head / token embedding frozen</text>
+</svg>

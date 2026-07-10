@@ -37,8 +37,17 @@ class ModelConfig:
 
     # --- heads ---
     reg_head_hidden: int = 0           # 0 -> use LLM hidden size
+    reg_enabled: bool = True           # false -> no masked-reg loss (e.g. CE + MTP-only arms)
     mtp_enabled: bool = True
     mtp_k: int = 4                     # predict h_{t+1..t+k}
+
+    # --- dual-view training (V4 validation round) ---
+    # off: single forward (round-3 behaviour: CE and reg share the masked input)
+    # reg: clean view -> CE (input never sees [M]); masked view -> visual-only reg(+mtp).
+    #      L = CE_clean + lambda_reg * L_reg_masked
+    # ce : both views run CE, no regression (isolates the consistency/regularizer effect).
+    #      L = 0.5 * (CE_clean + CE_masked)
+    dual_view: str = "off"             # off | reg | ce
 
     # --- deepstack ---
     use_deepstack: bool = True         # pool & inject deepstack features (zeroed at masked slots)
@@ -162,4 +171,10 @@ def load_config(path: str, overrides: list[str] | None = None) -> Config:
         raise ValueError("model.frame_size must be a multiple of 32 (patch 16 x merge 2)")
     if cfg.model.mask_variant not in ("v1", "v2.1", "v2.2"):
         raise ValueError(f"bad mask_variant {cfg.model.mask_variant}")
+    if cfg.model.dual_view not in ("off", "reg", "ce"):
+        raise ValueError(f"bad dual_view {cfg.model.dual_view}")
+    if cfg.model.dual_view != "off" and cfg.model.mask_variant == "v1":
+        raise ValueError("dual_view needs a mask variant (v2.1/v2.2); v1 has no masked view")
+    if not cfg.model.reg_enabled and not cfg.model.mtp_enabled and cfg.model.dual_view != "ce":
+        raise ValueError("reg_enabled=false requires mtp_enabled=true (otherwise no latent loss at all)")
     return cfg
