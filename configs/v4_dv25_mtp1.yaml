@@ -1,4 +1,4 @@
-# V4 组合臂: dual-view masked reg + 下一帧 MTP —— 两个想法叠加 (S1+S2).
+# V4 组合臂: tail dual-view + 下一帧 MTP (S1+S2 叠加).
 _base_: v4_dv25_s0.yaml
 model:
   mtp_enabled: true

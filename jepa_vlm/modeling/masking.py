@@ -52,9 +52,17 @@ def sample_token_mask(
 
     tube: whole frames masked (plan default). patch: random tokens across all frames
     (expected to fail per plan section 5.1 - mechanism ablation only).
+    tail: mask the LAST ceil(ratio*T) frames (V4 streaming semantics: the model must
+    predict the unseen future of the clip from its prefix — matches the deployment
+    condition of streaming video, where the future is never visible).
     """
     if mode == "tube":
         frame_mask = sample_frame_mask(batch_size, num_frames, ratio, max_run, generator)
+        token_mask = frame_mask[:, :, None].expand(-1, -1, tokens_per_frame).clone()
+    elif mode == "tail":
+        n_mask = min(max(int(round(ratio * num_frames)), 1), num_frames - 1)
+        frame_mask = torch.zeros(batch_size, num_frames, dtype=torch.bool)
+        frame_mask[:, num_frames - n_mask:] = True
         token_mask = frame_mask[:, :, None].expand(-1, -1, tokens_per_frame).clone()
     elif mode == "patch":
         n_tok = num_frames * tokens_per_frame

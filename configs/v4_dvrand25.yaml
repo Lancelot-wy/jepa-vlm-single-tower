@@ -1,0 +1,7 @@
+# V4 S2 消融: dual-view + 随机 tube mask 25% (对照 tail) —— 隔离"流式语义 (预测未来)"
+# 相对"一般遮挡补全"的贡献. 若 rand ≈ tail, 则流式方向性不重要, 结论必须如实定性.
+_base_: v4_dv25_s0.yaml
+model:
+  mask_mode: tube
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dvrand25

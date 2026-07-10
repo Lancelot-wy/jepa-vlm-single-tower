@@ -1,9 +1,7 @@
-# V4 关键消融 (C9): dual-view 双 CE, 无回归项 —— 若此臂 ≈ dv25, 则有效成分是
-# "一致性正则" 而非 "预测", 结论定性完全不同. mask 25% 与 dv25 对齐.
-_base_: r3_joint.yaml
+# V4 关键消融 (C9): dual-view 双 CE, 无回归项, tail 25% —— 若 ≈ dv25, 有效成分是
+# 一致性正则而非预测.
+_base_: v4_dv25_s0.yaml
 model:
   dual_view: ce
-  mask_ratio: 0.25
 train:
-  seed: 0
   output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dvce25

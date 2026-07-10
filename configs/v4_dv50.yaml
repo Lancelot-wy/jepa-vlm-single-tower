@@ -1,4 +1,4 @@
-# V4 S2 消融: dual-view + mask 50% (与 r3_joint 单视图 50% 对齐 ratio, 分离 dual-view 效应).
+# V4 S2 消融: tail mask 50% (预测更远的未来).
 _base_: v4_dv25_s0.yaml
 model:
   mask_ratio: 0.5

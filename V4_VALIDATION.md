@@ -17,24 +17,25 @@ cd /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower && git pu
 #   SB_VIDEO_ROOT : 对应 csv 的视频目录（内含 sample_N/video.mp4）
 ```
 
-数据/环境/模型均沿用 Round-3（jepa311 env、Qwen3-VL-2B、qa_train_flow.jsonl），零新依赖。
+数据/环境/模型沿用公司框架（jepa311 env、Qwen3-VL-2B、qa_train_flow.jsonl），零新依赖。
+**V4 纪律**：全臂 temporal_qa_ratio=0（不混入姊妹项目自建的帧序判别任务）；S2 臂用 tail mask（流式语义）；裁判只有流式 benchmark。
 
 ## 1. 提交训练臂（11 台，Day-1 上午一次性全部提交）
 
 ```bash
 NODES=1 EXTRA_OVERRIDES='train.min_flow=8.42' scripts/cluster/submit_batch.sh \
   v4_ctrl_s0 v4_ctrl_s1 \
-  v4_dv25_s0 v4_dv25_s1 v4_dv50 v4_dv25_lam05 v4_sv25 \
+  v4_dv25_s0 v4_dv25_s1 v4_dv50 v4_dv25_lam05 v4_dvrand25 \
   v4_mtp1 v4_mtp4 v4_dv25_mtp1 v4_dvce25
 ```
 
 | 臂 | 组 | 回答什么 |
 |---|---|---|
 | v4_ctrl_s0 / s1 | 对照 | 机制基准（一切 claim 只认与它的配对差） |
-| v4_dv25_s0 / s1 | S2 主线 | dual-view 25% λ0.2，2 seeds |
-| v4_dv50 | S2 消融 | 与 r3_joint 对齐 ratio，分离 dual-view 效应 |
+| v4_dv25_s0 / s1 | S2 主线 | dual-view + **tail mask** 25%（从前缀预测未来=流式语义），2 seeds |
+| v4_dv50 | S2 消融 | tail 50%（预测更远未来） |
 | v4_dv25_lam05 | S2 消融 | λ 敏感性 |
-| v4_sv25 | 消融 | 单视图 25%：r3 弱结果是 mask 太强还是 CE 被污染 |
+| v4_dvrand25 | S2 消融 | 随机 mask vs tail mask：隔离"流式语义(预测未来)"的贡献 |
 | v4_mtp1 | S1 主线 | clean CE + 0.2·MTP(k=1)（帧间预测） |
 | v4_mtp4 | S1 消融 | 多步预测 k=4 |
 | v4_dv25_mtp1 | 组合 | S1+S2 叠加 |
@@ -66,7 +67,7 @@ dual-view 臂显存更高：OOM 时对该臂 `EXTRA_OVERRIDES='train.batch_size=
 
 ```bash
 # 每台训练节点跑完自动落 ckpt 到 outputs/<arm>/step_4000。评测（2-3 台并行消化）:
-ARMS="v4_ctrl_s0 v4_ctrl_s1 v4_dv25_s0 v4_dv25_s1 v4_dv50 v4_dv25_lam05 v4_sv25 v4_mtp1 v4_mtp4 v4_dv25_mtp1 v4_dvce25" \
+ARMS="v4_ctrl_s0 v4_ctrl_s1 v4_dv25_s0 v4_dv25_s1 v4_dv50 v4_dv25_lam05 v4_dvrand25 v4_mtp1 v4_mtp4 v4_dv25_mtp1 v4_dvce25" \
   OVO_ROOT=... SB_CSV=... SB_VIDEO_ROOT=... bash scripts/cluster/run_streaming_eval.sh
 # 汇总（准确率表 + 相对 v4_ctrl_s0 的配对翻转 + 符号检验）:
 python scripts/summarize_streaming.py $BASE/outputs/streaming_eval
