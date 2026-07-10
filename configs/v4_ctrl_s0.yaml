@@ -1,7 +1,8 @@
-# V4 对照臂: 纯 CE SFT, seed 0. 训练数据 = LLaVA-Video 原生 QA (temporal_qa_ratio=0:
-# 不混入姊妹项目自建的帧序判别任务 —— V4 是流式验证, 裁判只有流式 benchmark).
-_base_: r3_sft.yaml
+# V4 对照臂: 纯 CE SFT (LoRA), seed 0. 一切 claim 只认与它的配对差.
+_base_: v4_base.yaml
+model:
+  mask_variant: v1
 train:
+  lambda_reg: 0.0
   seed: 0
-  temporal_qa_ratio: 0.0
   output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_ctrl_s0

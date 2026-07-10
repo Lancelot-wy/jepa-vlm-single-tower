@@ -1,12 +1,10 @@
-# V4 主线 S2 (流式语义): dual-view + TAIL mask 25% —— clean 视图走 CE (永不见 [M]),
-# masked 视图把 clip 尾部 25% 帧遮成 [M], 从前缀预测未来 latent = 部署时"未来不可见"
-# 的训练化身. L = CE + 0.2 * reg.  temporal_qa_ratio=0 (纯 LLaVA-Video 原生 QA).
-_base_: r3_joint.yaml
+# V4 主线 S2: dual-view + TAIL mask 25% —— clean 视图走 CE, masked 视图遮 clip 尾部,
+# 从前缀预测未来 latent (流式部署条件的训练化身). L = CE + 0.2*reg.
+_base_: v4_base.yaml
 model:
   dual_view: reg
   mask_mode: tail
   mask_ratio: 0.25
 train:
   seed: 0
-  temporal_qa_ratio: 0.0
   output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv25_s0

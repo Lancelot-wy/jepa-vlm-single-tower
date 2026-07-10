@@ -1,4 +1,4 @@
-# V4 S2 消融: lambda 0.5.
+# S2 消融: lambda 0.5.
 _base_: v4_dv25_s0.yaml
 train:
   lambda_reg: 0.5

@@ -1,0 +1,15 @@
+# V4 流式验证公共基座 —— 与姊妹项目(2B 表征实验)划清边界:
+#   * 基座 Qwen3-VL-8B (流式方法主战场 7B-8B 级; SimpleStream 同 backbone 家族可直接对比)
+#     一次性准备: 开发机代理下载 Qwen/Qwen3-VL-8B-Instruct 到 /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-8B-Instruct
+#   * LLM 用 LoRA (8B 全参放不进 4x48G 裸 DDP); 所有臂 adapter 配置完全一致 => 配对 A/B 干净
+#   * ViT 全参放开 (回归目标要塑形视觉表征)
+#   * temporal_qa_ratio=0: 不混入姊妹项目自建帧序判别任务; 裁判只有流式 benchmark
+_base_: r3_joint.yaml
+model:
+  pretrained: /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-8B-Instruct
+train:
+  train_llm: lora
+  train_vision: true
+  temporal_qa_ratio: 0.0
+  batch_size: 2
+  grad_accum: 8

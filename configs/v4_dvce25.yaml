@@ -1,5 +1,4 @@
-# V4 关键消融 (C9): dual-view 双 CE, 无回归项, tail 25% —— 若 ≈ dv25, 有效成分是
-# 一致性正则而非预测.
+# 关键消融 (C9): dual-view 双 CE 无回归项, tail 25% —— 若 ≈ dv25, 有效成分是正则不是预测.
 _base_: v4_dv25_s0.yaml
 model:
   dual_view: ce

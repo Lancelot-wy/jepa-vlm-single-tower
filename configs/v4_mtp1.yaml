@@ -1,6 +1,5 @@
-# V4 主线 S1 (帧间预测): clean 输入, CE + 0.2 * MTP(k=1) —— hidden[t] 预测 t+1 帧
-# latent (因果方向, 天然流式).  temporal_qa_ratio=0.
-_base_: r3_joint.yaml
+# V4 主线 S1: clean CE + 0.2*MTP(k=1) —— hidden[t] 预测 t+1 帧 latent (因果, 天然流式).
+_base_: v4_base.yaml
 model:
   mask_variant: v1
   reg_enabled: false
@@ -8,5 +7,4 @@ model:
   mtp_k: 1
 train:
   seed: 0
-  temporal_qa_ratio: 0.0
   output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_mtp1

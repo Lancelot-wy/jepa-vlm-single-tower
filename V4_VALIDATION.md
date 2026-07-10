@@ -17,7 +17,15 @@ cd /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower && git pu
 #   SB_VIDEO_ROOT : 对应 csv 的视频目录（内含 sample_N/video.mp4）
 ```
 
-数据/环境/模型沿用公司框架（jepa311 env、Qwen3-VL-2B、qa_train_flow.jsonl），零新依赖。
+环境/数据管线沿用公司框架（jepa311 env、qa_train_flow.jsonl），零新依赖。
+**基座 = Qwen3-VL-8B-Instruct**（流式方法主战场 7B–8B 级，与 SimpleStream backbone 家族可直接对比；
+2B 是姊妹项目表征实验的选择，不适用于流式基线修改）。一次性准备（开发机代理下载 ~16GB）：
+```bash
+huggingface-cli download Qwen/Qwen3-VL-8B-Instruct \
+  --local-dir /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-8B-Instruct
+```
+LLM 用 LoRA（8B 全参放不进 4×48G 裸 DDP）、ViT 全参放开；**所有臂 adapter 配置完全一致，
+配对 A/B 不受影响**。单节点 eff.batch = 2×8×4 = 64。
 **V4 纪律**：全臂 temporal_qa_ratio=0（不混入姊妹项目自建的帧序判别任务）；S2 臂用 tail mask（流式语义）；裁判只有流式 benchmark。
 
 ## 1. 提交训练臂（11 台，Day-1 上午一次性全部提交）
@@ -41,9 +49,7 @@ NODES=1 EXTRA_OVERRIDES='train.min_flow=8.42' scripts/cluster/submit_batch.sh \
 | v4_dv25_mtp1 | 组合 | S1+S2 叠加 |
 | v4_dvce25 | 关键消融 | 双 CE 无预测项——若 ≈ dv25，则有效成分是正则不是预测 |
 
-单节点 eff.batch = 4×4×4=64（r3 的一半）：**保持 lr 不变、把步数放到 max_steps=4000 不变**
-（样本量减半但两天窗口优先可比性——所有臂同一预算，配对比较不受影响）。
-dual-view 臂显存更高：OOM 时对该臂 `EXTRA_OVERRIDES='train.batch_size=2 train.grad_accum=8'`。
+步数 max_steps=4000 不变，所有臂同一预算。dual-view 臂双前向显存更高：OOM 时该臂降 `train.batch_size=1 train.grad_accum=16`。
 
 ## 2. 训练期间同时提交（Day-1，不等训练）
 

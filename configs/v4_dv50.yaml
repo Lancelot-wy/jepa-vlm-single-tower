@@ -1,4 +1,4 @@
-# V4 S2 消融: tail mask 50% (预测更远的未来).
+# S2 消融: tail 50% (预测更远未来).
 _base_: v4_dv25_s0.yaml
 model:
   mask_ratio: 0.5
