@@ -25,9 +25,13 @@ from ..modeling.model import build_model
 
 
 def load_run(config_path: str, ckpt_dir: str | None):
-    with open(config_path) as f:
-        d = json.load(f)
-    cfg = Config(model=ModelConfig(**d["model"]), train=TrainConfig(**d["train"]))
+    if config_path.endswith((".yaml", ".yml")):
+        from ..config import load_config
+        cfg = load_config(config_path)
+    else:
+        with open(config_path) as f:
+            d = json.load(f)
+        cfg = Config(model=ModelConfig(**d["model"]), train=TrainConfig(**d["train"]))
     model = build_model(cfg)
     if ckpt_dir:
         state = torch.load(os.path.join(ckpt_dir, "state.pt"), map_location="cpu", weights_only=False)

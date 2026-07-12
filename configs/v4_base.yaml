@@ -6,7 +6,7 @@
 #   * temporal_qa_ratio=0: 不混入姊妹项目自建帧序判别任务; 裁判只有流式 benchmark
 _base_: r3_joint.yaml
 model:
-  pretrained: /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-8B-Instruct
+  pretrained: /data/vjuicefs_sz_ocr_wl/public_data/11193960/stream/Qwen3-VL-8B-Instruct
 train:
   train_llm: lora
   train_vision: true
