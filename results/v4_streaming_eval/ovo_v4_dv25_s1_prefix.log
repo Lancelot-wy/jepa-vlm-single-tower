@@ -1,0 +1,18 @@
+ovo: 389 questions (mode=prefix, window=64.0)
+resume: 25 already done
+Loading weights:   0%|          | 0/750 [00:00<?, ?it/s]Loading weights:  46%|████▌     | 345/750 [00:00<00:00, 3394.95it/s]Loading weights: 100%|██████████| 750/750 [00:00<00:00, 5043.02it/s]
+[transformers] Qwen3VLVisionModel does not expose input embeddings. Gradients cannot flow back to the token embeddings when using adapters or gradient checkpointing. Override `get_input_embeddings` to fully support those features, or set `_input_embed_layer` to the attribute name that holds the embeddings.
+loaded 860 tensors from /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_dv25_s1/step_4000
+50/389  running acc 56.00%
+100/389  running acc 42.67%
+150/389  running acc 40.00%
+200/389  running acc 41.14%
+250/389  running acc 44.44%
+300/389  running acc 46.91%
+350/389  running acc 45.54%
+
+=== ovo streaming MCQ (prefix) ===
+decode failures: 0
+overall (this run): 170/364 = 46.70%
+  ASI          52/105 = 49.52%
+  EPM          118/259 = 45.56%

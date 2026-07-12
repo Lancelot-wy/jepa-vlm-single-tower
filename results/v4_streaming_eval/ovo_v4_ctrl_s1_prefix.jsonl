@@ -1,0 +1,389 @@
+{"qid": "ovo_0", "task": "EPM", "t": 215.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.3839, 0.434, 0.3401, 0.1407]}
+{"qid": "ovo_1", "task": "EPM", "t": 244.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.4234, 0.9419, 0.193, 1.0726]}
+{"qid": "ovo_2", "task": "EPM", "t": 265.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.9513, 0.8795, 0.0466, 0.9146]}
+{"qid": "ovo_3", "task": "EPM", "t": 369.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.5235, 1.2305, 1.185, 1.3043]}
+{"qid": "ovo_4", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1509, 0.7029, 0.5268, 0.839]}
+{"qid": "ovo_5", "task": "EPM", "t": 185.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.4166, 0.7374, 0.5158, 0.4836]}
+{"qid": "ovo_6", "task": "EPM", "t": 193.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.2326, 0.82, 0.3648, 0.6385]}
+{"qid": "ovo_7", "task": "EPM", "t": 249.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.6524, 0.1127, 1.0765, 1.1528]}
+{"qid": "ovo_9", "task": "EPM", "t": 40.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.7458, 0.0558, 0.5556, 0.3501]}
+{"qid": "ovo_10", "task": "EPM", "t": 48.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.439, 0.6266, 0.4624, 0.722]}
+{"qid": "ovo_11", "task": "EPM", "t": 202.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5635, 0.1933, 1.1724, 1.6803]}
+{"qid": "ovo_12", "task": "EPM", "t": 252.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1966, 0.241, 0.8385, 0.4885]}
+{"qid": "ovo_13", "task": "EPM", "t": 295.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.198, 1.0014, 0.9174, 1.1121]}
+{"qid": "ovo_14", "task": "EPM", "t": 404.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.3052, 0.2816, 0.4485, 0.221]}
+{"qid": "ovo_15", "task": "EPM", "t": 353.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.1164, 0.2204, 0.6583, 1.1666]}
+{"qid": "ovo_16", "task": "EPM", "t": 341.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.09, 1.0154, 0.5983, 0.5633]}
+{"qid": "ovo_17", "task": "EPM", "t": 288.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5778, 0.2284, 0.7654, 0.5958]}
+{"qid": "ovo_18", "task": "EPM", "t": 266.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.3178, 0.564, 0.6477, 0.6682]}
+{"qid": "ovo_19", "task": "EPM", "t": 297.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.7766, 0.6481, 0.2833, 0.6602]}
+{"qid": "ovo_20", "task": "EPM", "t": 304.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.181, 0.3627, 0.7868, 0.9222]}
+{"qid": "ovo_21", "task": "EPM", "t": 317.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.8545, 0.2939, 0.6482, 0.9503]}
+{"qid": "ovo_22", "task": "EPM", "t": 377.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.6251, 0.9907, 0.4047, 0.9949]}
+{"qid": "ovo_23", "task": "EPM", "t": 288.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0833, 0.3489, 0.3752, 0.4146]}
+{"qid": "ovo_24", "task": "EPM", "t": 382.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.3578, 0.2433, 0.3638, 0.2303]}
+{"qid": "ovo_25", "task": "EPM", "t": 465.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.313, 0.7737]}
+{"qid": "ovo_26", "task": "EPM", "t": 480.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1119, 0.8863, 0.9771, 0.577]}
+{"qid": "ovo_27", "task": "EPM", "t": 202.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.3954, 0.5467, 0.3929, 0.7451]}
+{"qid": "ovo_28", "task": "EPM", "t": 214.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0872, 0.2789, 0.6434, 0.623]}
+{"qid": "ovo_29", "task": "EPM", "t": 237.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0672, 1.1751, 0.8424, 0.9283]}
+{"qid": "ovo_30", "task": "EPM", "t": 293.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.8573, 0.4367, 0.2276, 0.6443]}
+{"qid": "ovo_33", "task": "EPM", "t": 38.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.7575, 0.4439, 0.4738, 1.2424]}
+{"qid": "ovo_35", "task": "EPM", "t": 82.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.3791, 0.1644, 0.2496, 0.5781]}
+{"qid": "ovo_36", "task": "EPM", "t": 150.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.4075, 0.1149, 0.4415, 0.2993]}
+{"qid": "ovo_37", "task": "EPM", "t": 315.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.2922, 0.2883, 0.2844, 0.2055]}
+{"qid": "ovo_38", "task": "EPM", "t": 328.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.1606, 0.2855, 0.5251, 0.2451]}
+{"qid": "ovo_39", "task": "EPM", "t": 180.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.6094, 0.4788, 0.3368, 0.5854]}
+{"qid": "ovo_40", "task": "EPM", "t": 263.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.9699, 0.0793, 0.3978, 0.7812]}
+{"qid": "ovo_41", "task": "EPM", "t": 310.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1512, 0.0676, 0.7641, 0.6645]}
+{"qid": "ovo_42", "task": "EPM", "t": 341.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.2315, 0.1978, 0.6289, 0.3244]}
+{"qid": "ovo_43", "task": "EPM", "t": 243.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.126, 0.0683, 0.5144, 0.5158]}
+{"qid": "ovo_44", "task": "EPM", "t": 308.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1739, 0.3611, 0.4751, 0.4255]}
+{"qid": "ovo_45", "task": "EPM", "t": 340.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.4233, 0.1916, 0.2549, 0.6149]}
+{"qid": "ovo_46", "task": "EPM", "t": 409.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.4215, 1.3056, 0.8255, 0.0699]}
+{"qid": "ovo_47", "task": "EPM", "t": 81.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.3248, 0.2009, 0.9083, 0.1029]}
+{"qid": "ovo_48", "task": "EPM", "t": 198.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.8829, 0.2838, 1.6393, 1.5337]}
+{"qid": "ovo_49", "task": "EPM", "t": 210.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5992, 0.2014, 0.5331, 1.0831]}
+{"qid": "ovo_50", "task": "EPM", "t": 295.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3903, 0.2601, 0.873, 0.5546]}
+{"qid": "ovo_51", "task": "EPM", "t": 359.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1824, 0.5104, 0.4766, 0.6985]}
+{"qid": "ovo_52", "task": "EPM", "t": 410.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.4015, 0.4386, 0.5523, 1.1574]}
+{"qid": "ovo_53", "task": "EPM", "t": 423.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.4534, 0.3886, 0.1741, 0.994]}
+{"qid": "ovo_54", "task": "EPM", "t": 289.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.2671, 0.2647, 0.2137, 0.3239]}
+{"qid": "ovo_55", "task": "EPM", "t": 414.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.2961, 0.2744, 0.6628, 0.6065]}
+{"qid": "ovo_56", "task": "EPM", "t": 190.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.0996, 0.4721, 0.5425, 0.4532]}
+{"qid": "ovo_57", "task": "EPM", "t": 191.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [1.1282, 0.453, 0.2093, 0.6066]}
+{"qid": "ovo_58", "task": "EPM", "t": 223.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.3754, 0.1325, 0.7951, 0.3788]}
+{"qid": "ovo_59", "task": "EPM", "t": 237.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.2897, 0.1897, 0.5497, 0.2175]}
+{"qid": "ovo_60", "task": "EPM", "t": 260.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.8727, 0.1636, 0.5878, 0.4247]}
+{"qid": "ovo_61", "task": "EPM", "t": 296.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.6589, 0.318, 0.8405, 0.2809]}
+{"qid": "ovo_62", "task": "EPM", "t": 75.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5478, 0.2117, 0.6415, 1.0353]}
+{"qid": "ovo_63", "task": "EPM", "t": 154.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.7294, 0.7223, 0.3583, 0.3616]}
+{"qid": "ovo_64", "task": "EPM", "t": 364.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.204, 0.3507, 0.9701, 1.0931]}
+{"qid": "ovo_65", "task": "EPM", "t": 422.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [1.2977, 0.5042, 1.0479, 0.1833]}
+{"qid": "ovo_66", "task": "EPM", "t": 373.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.3704, 0.2834, 0.2407, 0.6649]}
+{"qid": "ovo_67", "task": "EPM", "t": 332.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.317, 0.3208, 0.2163, 0.7027]}
+{"qid": "ovo_68", "task": "EPM", "t": 278.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.4611, 0.5956, 0.1769, 0.8359]}
+{"qid": "ovo_69", "task": "EPM", "t": 278.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.7957, 0.9004, 0.18, 0.3789]}
+{"qid": "ovo_70", "task": "EPM", "t": 292.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.5298, 0.3812, 0.2652, 0.2855]}
+{"qid": "ovo_71", "task": "EPM", "t": 346.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.6786, 0.1287, 0.2882, 0.7173]}
+{"qid": "ovo_72", "task": "EPM", "t": 411.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.3205, 0.2635, 0.6287, 0.4801]}
+{"qid": "ovo_73", "task": "EPM", "t": 438.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.3042, 0.3234, 0.9192, 0.2952]}
+{"qid": "ovo_75", "task": "EPM", "t": 141.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [2.4631, 1.6551, 0.6162, 2.4756]}
+{"qid": "ovo_76", "task": "EPM", "t": 228.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4039, 0.1586, 0.5335, 0.5218]}
+{"qid": "ovo_77", "task": "EPM", "t": 247.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.6972, 1.3086, 1.1866, 0.6271]}
+{"qid": "ovo_78", "task": "EPM", "t": 363.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.3147, 0.3397]}
+{"qid": "ovo_79", "task": "EPM", "t": 351.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.4293, 0.5755]}
+{"qid": "ovo_80", "task": "EPM", "t": 364.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.7155, 0.1873, 0.2777, 0.7112]}
+{"qid": "ovo_81", "task": "EPM", "t": 453.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3996, 0.0852, 1.1439, 0.7055]}
+{"qid": "ovo_82", "task": "EPM", "t": 76.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1492, 0.5258, 0.3138, 0.8463]}
+{"qid": "ovo_83", "task": "EPM", "t": 143.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.4583, 0.0865, 0.2909, 0.9046]}
+{"qid": "ovo_84", "task": "EPM", "t": 270.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0814, 1.0323, 0.8957, 0.9295]}
+{"qid": "ovo_85", "task": "EPM", "t": 287.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.1638, 0.8851, 0.3475, 1.3066]}
+{"qid": "ovo_86", "task": "EPM", "t": 1161.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.2667, 0.2503, 0.2354, 0.5393]}
+{"qid": "ovo_87", "task": "EPM", "t": 1190.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.2035, 0.1574, 1.0204, 1.0371]}
+{"qid": "ovo_88", "task": "EPM", "t": 1198.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2365, 0.8675, 0.9043, 0.7909]}
+{"qid": "ovo_89", "task": "EPM", "t": 727.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.5362, 0.3594, 0.2685, 0.2016]}
+{"qid": "ovo_90", "task": "EPM", "t": 211.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.1963, 0.1664, 0.504, 0.553]}
+{"qid": "ovo_91", "task": "EPM", "t": 267.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.4667, 0.2175, 1.0732, 0.2719]}
+{"qid": "ovo_92", "task": "EPM", "t": 271.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.4281, 0.3431, 0.4685, 0.215]}
+{"qid": "ovo_93", "task": "EPM", "t": 301.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.6482, 1.1827, 0.39, 0.2234]}
+{"qid": "ovo_95", "task": "EPM", "t": 103.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.4973, 0.2088, 0.7071, 0.3516]}
+{"qid": "ovo_96", "task": "EPM", "t": 152.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4995, 0.1107, 0.5531, 0.3994]}
+{"qid": "ovo_97", "task": "EPM", "t": 411.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1235, 0.8553, 0.6909, 1.1423]}
+{"qid": "ovo_98", "task": "EPM", "t": 244.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.5692, 0.7686, 0.6696, 0.4929]}
+{"qid": "ovo_99", "task": "EPM", "t": 322.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.167, 0.5565, 0.4349, 0.7364]}
+{"qid": "ovo_100", "task": "EPM", "t": 396.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.2919, 0.5582]}
+{"qid": "ovo_101", "task": "EPM", "t": 325.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.3751, 0.1805, 1.0469, 1.4937]}
+{"qid": "ovo_102", "task": "EPM", "t": 341.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.3012, 0.3104, 0.7203, 0.3378]}
+{"qid": "ovo_103", "task": "EPM", "t": 439.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.5263, 0.9961, 0.1656, 1.5296]}
+{"qid": "ovo_104", "task": "EPM", "t": 51.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5459, 0.2206, 0.2453, 0.2343]}
+{"qid": "ovo_105", "task": "EPM", "t": 81.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.2444, 0.4692, 0.3305, 0.1895]}
+{"qid": "ovo_106", "task": "EPM", "t": 192.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.3866, 0.5027, 0.0962, 0.7701]}
+{"qid": "ovo_107", "task": "EPM", "t": 251.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.4347, 0.3857, 0.217, 0.5544]}
+{"qid": "ovo_108", "task": "EPM", "t": 322.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5688, 0.1319, 0.8078, 1.1811]}
+{"qid": "ovo_109", "task": "EPM", "t": 394.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.6036, 0.1417, 0.3981, 0.3462]}
+{"qid": "ovo_110", "task": "EPM", "t": 466.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.182, 0.1193, 0.8345, 0.7675]}
+{"qid": "ovo_111", "task": "EPM", "t": 467.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1721, 0.4876]}
+{"qid": "ovo_112", "task": "EPM", "t": 467.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1456, 0.1896, 0.3123, 0.8025]}
+{"qid": "ovo_113", "task": "EPM", "t": 466.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.2247, 0.1034, 0.1911, 0.8914]}
+{"qid": "ovo_114", "task": "EPM", "t": 198.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.4046, 0.5768, 0.3974, 0.4409]}
+{"qid": "ovo_115", "task": "EPM", "t": 199.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.3724, 0.4304, 0.2371, 0.3771]}
+{"qid": "ovo_116", "task": "EPM", "t": 202.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2259, 0.2801, 0.8087, 0.319]}
+{"qid": "ovo_117", "task": "EPM", "t": 389.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.1018, 0.6714, 0.578, 0.3715]}
+{"qid": "ovo_118", "task": "EPM", "t": 118.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5346, 0.3619, 0.5821, 0.613]}
+{"qid": "ovo_119", "task": "EPM", "t": 183.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.6337, 0.3314, 0.8003, 0.7623]}
+{"qid": "ovo_120", "task": "EPM", "t": 251.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.3369, 0.5768, 0.1338, 0.819]}
+{"qid": "ovo_121", "task": "EPM", "t": 245.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.301, 0.6407, 0.2087, 0.8495]}
+{"qid": "ovo_122", "task": "EPM", "t": 418.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.3025, 0.3609, 0.4808, 0.2716]}
+{"qid": "ovo_123", "task": "EPM", "t": 431.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.6333, 0.2597, 0.4968, 0.8806]}
+{"qid": "ovo_124", "task": "EPM", "t": 440.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.6486, 0.3253, 0.3677, 0.6399]}
+{"qid": "ovo_125", "task": "EPM", "t": 456.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3897, 0.2697, 0.3316, 0.291]}
+{"qid": "ovo_126", "task": "EPM", "t": 262.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2508, 0.8642, 0.4378, 0.3025]}
+{"qid": "ovo_127", "task": "EPM", "t": 337.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5497, 0.1323, 1.2516, 1.3368]}
+{"qid": "ovo_128", "task": "EPM", "t": 401.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.6242, 0.5285, 0.5774, 0.6812]}
+{"qid": "ovo_129", "task": "EPM", "t": 468.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.4862, 0.4883]}
+{"qid": "ovo_130", "task": "EPM", "t": 240.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.3945, 0.6632, 0.4183]}
+{"qid": "ovo_131", "task": "EPM", "t": 277.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.9997, 0.1121, 0.5789]}
+{"qid": "ovo_132", "task": "EPM", "t": 374.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2245, 0.481, 0.5016]}
+{"qid": "ovo_133", "task": "EPM", "t": 472.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.7221, 1.4079, 0.2178]}
+{"qid": "ovo_134", "task": "EPM", "t": 463.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2787, 0.4658, 0.677, 0.4801]}
+{"qid": "ovo_135", "task": "EPM", "t": 465.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3493, 0.2639, 0.5038, 0.9334]}
+{"qid": "ovo_136", "task": "EPM", "t": 467.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1426, 0.2489, 0.5407, 1.036]}
+{"qid": "ovo_137", "task": "EPM", "t": 463.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.5544, 0.4653, 0.573, 0.4246]}
+{"qid": "ovo_138", "task": "EPM", "t": 292.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.3837, 0.096, 0.6793, 1.3492]}
+{"qid": "ovo_139", "task": "EPM", "t": 291.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.4462, 0.2745, 0.2648, 0.5283]}
+{"qid": "ovo_140", "task": "EPM", "t": 478.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.8199, 0.7073, 0.0809, 0.7687]}
+{"qid": "ovo_141", "task": "EPM", "t": 344.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.2586, 0.2039, 0.4446, 0.3762]}
+{"qid": "ovo_143", "task": "EPM", "t": 187.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.5151, 0.3677, 0.4086, 0.5581]}
+{"qid": "ovo_144", "task": "EPM", "t": 132.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.6054, 0.4674, 1.0883]}
+{"qid": "ovo_145", "task": "EPM", "t": 194.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1562, 0.4109, 0.6506]}
+{"qid": "ovo_146", "task": "EPM", "t": 211.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.289, 1.0108, 0.7116]}
+{"qid": "ovo_147", "task": "EPM", "t": 196.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2749, 0.4711, 0.2916]}
+{"qid": "ovo_148", "task": "EPM", "t": 351.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.506, 0.2203, 0.4436, 0.4114]}
+{"qid": "ovo_149", "task": "EPM", "t": 384.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.5378, 0.3131, 0.1072, 0.7524]}
+{"qid": "ovo_150", "task": "EPM", "t": 418.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4402, 0.1505, 0.4881, 0.5568]}
+{"qid": "ovo_151", "task": "EPM", "t": 464.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1077, 0.4724, 1.352, 0.9867]}
+{"qid": "ovo_152", "task": "EPM", "t": 294.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.2743, 0.2304, 0.2696, 0.2439]}
+{"qid": "ovo_153", "task": "EPM", "t": 474.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.3634, 0.2928, 0.1289, 0.2638]}
+{"qid": "ovo_154", "task": "EPM", "t": 419.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5111, 0.2357, 0.3232, 0.3507]}
+{"qid": "ovo_155", "task": "EPM", "t": 430.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0978, 0.2258, 0.3684, 0.3074]}
+{"qid": "ovo_156", "task": "EPM", "t": 108.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.2517, 0.5396, 0.3956, 0.2392]}
+{"qid": "ovo_157", "task": "EPM", "t": 170.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.1886, 0.365, 0.5635, 0.1898]}
+{"qid": "ovo_158", "task": "EPM", "t": 187.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.976, 0.1973, 0.5578, 0.7434]}
+{"qid": "ovo_159", "task": "EPM", "t": 427.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.981, 0.8164, 0.9732, 0.1907]}
+{"qid": "ovo_160", "task": "EPM", "t": 127.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3714, 0.1674, 0.17, 0.5032]}
+{"qid": "ovo_161", "task": "EPM", "t": 471.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.9646, 0.142, 0.4593, 0.2889]}
+{"qid": "ovo_162", "task": "EPM", "t": 590.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.6894, 0.4184, 0.2186, 0.2614]}
+{"qid": "ovo_163", "task": "EPM", "t": 997.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.2294, 0.173, 0.7683, 0.7849]}
+{"qid": "ovo_164", "task": "EPM", "t": 161.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.4477, 0.2242, 0.8414, 1.3562]}
+{"qid": "ovo_165", "task": "EPM", "t": 416.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.3847, 0.7098]}
+{"qid": "ovo_166", "task": "EPM", "t": 450.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [1.2092, 0.3926, 0.3086, 1.0489]}
+{"qid": "ovo_167", "task": "EPM", "t": 45.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0246, 1.0605, 0.8351, 0.8425]}
+{"qid": "ovo_168", "task": "EPM", "t": 302.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.7712, 0.2088, 0.4299, 1.0782]}
+{"qid": "ovo_169", "task": "EPM", "t": 308.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [1.0799, 0.2494, 0.3523, 1.0486]}
+{"qid": "ovo_170", "task": "EPM", "t": 328.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.8218, 0.1201, 0.4737, 1.3414]}
+{"qid": "ovo_171", "task": "EPM", "t": 330.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.7693, 0.331, 0.2388, 0.5772]}
+{"qid": "ovo_173", "task": "EPM", "t": 61.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.1837, 0.1792, 0.5341, 0.5787]}
+{"qid": "ovo_174", "task": "EPM", "t": 135.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.7623, 0.2825, 0.268, 0.5708]}
+{"qid": "ovo_175", "task": "EPM", "t": 446.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.3284, 0.1486, 0.7114, 0.4344]}
+{"qid": "ovo_176", "task": "EPM", "t": 38.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.5799, 0.7979]}
+{"qid": "ovo_177", "task": "EPM", "t": 94.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4433, 0.1695, 0.2422, 0.5931]}
+{"qid": "ovo_178", "task": "EPM", "t": 124.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2964, 1.0551]}
+{"qid": "ovo_179", "task": "EPM", "t": 168.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.301, 1.0058, 0.4805, 1.0647]}
+{"qid": "ovo_180", "task": "EPM", "t": 59.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.2204, 0.4079, 0.2205, 0.3097]}
+{"qid": "ovo_181", "task": "EPM", "t": 243.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1161, 0.2423, 0.6926, 0.2124]}
+{"qid": "ovo_182", "task": "EPM", "t": 360.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.5836, 0.5702, 0.1256, 0.4549]}
+{"qid": "ovo_183", "task": "EPM", "t": 411.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1821, 0.2831, 0.5281, 0.4342]}
+{"qid": "ovo_184", "task": "EPM", "t": 75.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2103, 1.4777, 1.5064, 1.2021]}
+{"qid": "ovo_185", "task": "EPM", "t": 264.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.6705, 0.9034, 0.2249, 0.7633]}
+{"qid": "ovo_186", "task": "EPM", "t": 419.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.2981, 0.1129, 0.5671, 0.4094]}
+{"qid": "ovo_187", "task": "EPM", "t": 455.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.4452, 0.5256, 0.6954, 0.3961]}
+{"qid": "ovo_188", "task": "EPM", "t": 30.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0527, 0.6791, 0.5271, 0.886]}
+{"qid": "ovo_189", "task": "EPM", "t": 116.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4174, 0.0779, 0.5747, 1.0567]}
+{"qid": "ovo_190", "task": "EPM", "t": 200.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.1976, 0.1612, 0.6639, 0.5876]}
+{"qid": "ovo_191", "task": "EPM", "t": 469.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.15, 0.195, 0.4429, 0.5195]}
+{"qid": "ovo_192", "task": "EPM", "t": 83.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.5587, 0.2097, 0.3826, 0.7067]}
+{"qid": "ovo_193", "task": "EPM", "t": 158.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3602, 0.1954, 0.4607, 0.2061]}
+{"qid": "ovo_194", "task": "EPM", "t": 285.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3704, 0.2662, 0.5412, 0.4208]}
+{"qid": "ovo_195", "task": "EPM", "t": 322.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.8067, 0.322, 0.2379, 0.4488]}
+{"qid": "ovo_196", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.274, 0.038]}
+{"qid": "ovo_197", "task": "EPM", "t": 117.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.4714, 0.7088, 0.8691, 1.0203]}
+{"qid": "ovo_198", "task": "EPM", "t": 115.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1481, 0.099]}
+{"qid": "ovo_199", "task": "EPM", "t": 110.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.256, 1.5337, 0.8828, 1.4196]}
+{"qid": "ovo_200", "task": "EPM", "t": 104.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.349, 0.0556, 0.9374]}
+{"qid": "ovo_201", "task": "EPM", "t": 111.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.0238, 0.2001, 0.3621, 1.5241]}
+{"qid": "ovo_202", "task": "EPM", "t": 116.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.4056, 0.4304, 0.4805, 0.1402]}
+{"qid": "ovo_203", "task": "EPM", "t": 110.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.3271, 0.4647, 1.6007, 1.2796]}
+{"qid": "ovo_205", "task": "EPM", "t": 170.0, "mode": "prefix", "window": 64.0, "pred": "E", "gt": "C", "correct": 0, "ce": [0.3791, 0.8703, 0.8855, 4.0573, 0.2138]}
+{"qid": "ovo_206", "task": "EPM", "t": 115.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.3687, 0.7177, 0.9432, 0.6601]}
+{"qid": "ovo_207", "task": "EPM", "t": 95.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.4683, 0.2131, 1.3889, 2.2577]}
+{"qid": "ovo_208", "task": "EPM", "t": 117.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [1.8225, 0.1505]}
+{"qid": "ovo_209", "task": "EPM", "t": 108.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.579, 0.1657, 0.4307, 0.2309]}
+{"qid": "ovo_211", "task": "EPM", "t": 109.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0442, 0.1413, 0.6361]}
+{"qid": "ovo_212", "task": "EPM", "t": 83.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [2.0881, 0.3524, 2.1351, 1.9867]}
+{"qid": "ovo_213", "task": "EPM", "t": 110.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4016, 0.2801, 0.909, 0.7189]}
+{"qid": "ovo_214", "task": "EPM", "t": 42.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "D", "correct": 0, "ce": [1.2875, 0.9463, 0.4115, 0.5348]}
+{"qid": "ovo_215", "task": "EPM", "t": 100.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1325, 0.1651]}
+{"qid": "ovo_216", "task": "EPM", "t": 57.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0794, 0.3193]}
+{"qid": "ovo_217", "task": "EPM", "t": 91.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0774, 0.7024]}
+{"qid": "ovo_218", "task": "EPM", "t": 74.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.566, 0.2261, 0.3919, 0.1084]}
+{"qid": "ovo_219", "task": "EPM", "t": 76.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.5587, 0.4756, 0.2044, 0.4089]}
+{"qid": "ovo_220", "task": "EPM", "t": 326.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.5402, 0.2145, 0.1893]}
+{"qid": "ovo_221", "task": "EPM", "t": 91.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [2.7866, 0.0832, 1.2328, 0.17, 0.5447]}
+{"qid": "ovo_222", "task": "EPM", "t": 110.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.3049, 0.5034, 0.2195, 0.2742]}
+{"qid": "ovo_223", "task": "EPM", "t": 87.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.4863, 0.7894, 0.4867, 0.561]}
+{"qid": "ovo_224", "task": "EPM", "t": 120.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0608, 0.1055]}
+{"qid": "ovo_225", "task": "EPM", "t": 91.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0933, 0.1376]}
+{"qid": "ovo_226", "task": "EPM", "t": 68.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.0783, 0.2388, 0.6958, 0.2467]}
+{"qid": "ovo_227", "task": "EPM", "t": 109.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0389, 0.2103]}
+{"qid": "ovo_228", "task": "EPM", "t": 105.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.5994, 0.5506, 0.6871, 0.337]}
+{"qid": "ovo_229", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.474, 0.8688, 0.554, 0.2201]}
+{"qid": "ovo_230", "task": "EPM", "t": 105.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0352, 1.1121, 1.3308, 0.8725]}
+{"qid": "ovo_231", "task": "EPM", "t": 117.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.1024, 0.1518]}
+{"qid": "ovo_232", "task": "EPM", "t": 92.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.034, 0.7538, 1.1308, 0.9143]}
+{"qid": "ovo_233", "task": "EPM", "t": 104.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.8706, 1.7123, 0.4079, 1.7729]}
+{"qid": "ovo_234", "task": "EPM", "t": 48.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.4355, 0.0487]}
+{"qid": "ovo_235", "task": "EPM", "t": 72.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2913, 1.2906, 0.7527, 1.268]}
+{"qid": "ovo_236", "task": "EPM", "t": 168.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.5564, 1.2263, 1.423, 0.3456]}
+{"qid": "ovo_237", "task": "EPM", "t": 71.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.3094, 0.1844, 0.1612, 0.2676]}
+{"qid": "ovo_238", "task": "EPM", "t": 74.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1767, 0.2346, 0.8464, 1.0455]}
+{"qid": "ovo_239", "task": "EPM", "t": 50.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [1.1574, 0.3484, 1.1472, 1.1679]}
+{"qid": "ovo_240", "task": "EPM", "t": 98.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.1827, 0.9315, 1.4871, 0.427]}
+{"qid": "ovo_241", "task": "EPM", "t": 66.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.5046, 1.3729, 0.1945, 1.2531]}
+{"qid": "ovo_242", "task": "EPM", "t": 83.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2242, 1.2734, 1.8068, 1.4765]}
+{"qid": "ovo_243", "task": "EPM", "t": 102.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [1.0736, 1.3938, 0.3986, 0.699]}
+{"qid": "ovo_244", "task": "EPM", "t": 91.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.3826, 0.9924, 0.3933, 0.3832]}
+{"qid": "ovo_245", "task": "EPM", "t": 91.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1549, 1.4896, 1.1701, 0.9819]}
+{"qid": "ovo_246", "task": "EPM", "t": 106.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1378, 0.5702, 0.5642, 0.7503]}
+{"qid": "ovo_247", "task": "EPM", "t": 107.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.3899, 0.6505, 1.2387, 0.6747]}
+{"qid": "ovo_248", "task": "EPM", "t": 117.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.0822, 0.4778]}
+{"qid": "ovo_249", "task": "EPM", "t": 63.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.9662, 0.1038, 0.3218]}
+{"qid": "ovo_250", "task": "EPM", "t": 102.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.7158, 1.0473, 1.2442, 1.377]}
+{"qid": "ovo_251", "task": "EPM", "t": 97.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0553, 0.351]}
+{"qid": "ovo_252", "task": "EPM", "t": 234.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0882, 0.825, 0.9637, 0.7009]}
+{"qid": "ovo_253", "task": "EPM", "t": 63.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.8104, 0.4671, 0.5852, 0.017]}
+{"qid": "ovo_255", "task": "EPM", "t": 116.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.258, 0.4382, 1.0402, 0.9152]}
+{"qid": "ovo_256", "task": "EPM", "t": 59.0, "mode": "prefix", "window": 64.0, "pred": "E", "gt": "E", "correct": 1, "ce": [1.8987, 0.754, 1.1708, 1.3181, 0.1905]}
+{"qid": "ovo_257", "task": "EPM", "t": 83.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.3612, 0.5358, 1.3053, 1.1554]}
+{"qid": "ovo_258", "task": "EPM", "t": 108.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.9733, 0.3429, 0.9684, 0.5043]}
+{"qid": "ovo_260", "task": "EPM", "t": 335.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.7685, 0.3636, 0.4878, 0.9465]}
+{"qid": "ovo_261", "task": "EPM", "t": 105.0, "mode": "prefix", "window": 64.0, "pred": "E", "gt": "E", "correct": 1, "ce": [0.4884, 0.1582, 0.2084, 1.906, 0.1523]}
+{"qid": "ovo_262", "task": "EPM", "t": 98.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.2399, 1.9828, 0.2239, 1.1708]}
+{"qid": "ovo_263", "task": "EPM", "t": 109.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [1.2342, 0.1275, 0.4632, 0.2254, 0.2731]}
+{"qid": "ovo_264", "task": "EPM", "t": 163.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "D", "correct": 0, "ce": [0.6674, 0.8192, 0.3406, 0.6668]}
+{"qid": "ovo_265", "task": "EPM", "t": 64.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.7908, 0.9897, 0.9156, 0.3935]}
+{"qid": "ovo_266", "task": "EPM", "t": 117.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.4321, 0.4162, 1.012, 0.6008]}
+{"qid": "ovo_267", "task": "EPM", "t": 109.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.1239, 0.3693, 0.9612, 0.6972]}
+{"qid": "ovo_268", "task": "EPM", "t": 95.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.483, 0.0953, 1.5058, 1.654]}
+{"qid": "ovo_269", "task": "EPM", "t": 44.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1968, 0.0941, 0.5452, 0.3464]}
+{"qid": "ovo_270", "task": "EPM", "t": 60.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.4878, 0.1836, 1.4335, 1.3659, 0.7501]}
+{"qid": "ovo_271", "task": "EPM", "t": 89.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.2976, 0.2356, 0.2612, 0.2217]}
+{"qid": "ovo_272", "task": "EPM", "t": 113.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.508, 0.2602, 0.7781, 0.768]}
+{"qid": "ovo_273", "task": "EPM", "t": 79.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1063, 0.3148, 1.1489, 0.8056]}
+{"qid": "ovo_274", "task": "EPM", "t": 120.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0591, 0.159]}
+{"qid": "ovo_275", "task": "EPM", "t": 62.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [1.3612, 0.1434, 0.801, 1.0222]}
+{"qid": "ovo_276", "task": "EPM", "t": 107.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.2731, 0.3761, 1.8595, 1.3822]}
+{"qid": "ovo_277", "task": "EPM", "t": 76.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.1429, 0.1429, 0.5231, 0.1603]}
+{"qid": "ovo_278", "task": "EPM", "t": 58.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [2.3426, 1.8988, 0.4871, 2.0105]}
+{"qid": "ovo_279", "task": "EPM", "t": 219.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.6625, 0.6614, 0.5514, 0.5929]}
+{"qid": "ovo_280", "task": "EPM", "t": 80.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.4276, 0.0985, 0.1872, 0.2283]}
+{"qid": "ovo_281", "task": "EPM", "t": 99.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1049, 0.1568, 0.1301]}
+{"qid": "ovo_282", "task": "EPM", "t": 114.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [1.3892, 1.7105, 1.6564, 0.822]}
+{"qid": "ovo_283", "task": "EPM", "t": 97.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1325, 0.1005]}
+{"qid": "ovo_284", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1289, 0.119, 0.2071, 0.1251]}
+{"qid": "ovo_285", "task": "EPM", "t": 95.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0523, 0.2579]}
+{"qid": "ovo_286", "task": "EPM", "t": 59.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2761, 1.114, 0.7836, 1.2292]}
+{"qid": "ovo_287", "task": "EPM", "t": 120.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.8653, 0.3665, 0.9756, 0.8701]}
+{"qid": "ovo_288", "task": "EPM", "t": 60.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.8892, 0.1865, 0.9572, 1.4927]}
+{"qid": "ovo_289", "task": "EPM", "t": 94.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.1252, 0.2224]}
+{"qid": "ovo_290", "task": "EPM", "t": 112.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.6247, 0.1628, 1.5704, 1.5909]}
+{"qid": "ovo_291", "task": "EPM", "t": 78.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.2907, 0.0855, 0.246]}
+{"qid": "ovo_292", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.4882, 0.7262, 0.0736]}
+{"qid": "ovo_293", "task": "EPM", "t": 57.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0236, 0.9934, 1.4309, 1.1303]}
+{"qid": "ovo_294", "task": "EPM", "t": 38.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [1.6134, 2.0425, 1.2983, 0.1914]}
+{"qid": "ovo_295", "task": "EPM", "t": 119.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2603, 0.9187, 0.5304, 0.8442]}
+{"qid": "ovo_483", "task": "ASI", "t": 136.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1795, 0.6122, 0.7788, 0.5542]}
+{"qid": "ovo_484", "task": "ASI", "t": 98.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.1392, 0.3278, 0.075]}
+{"qid": "ovo_485", "task": "ASI", "t": 71.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.2751, 0.317, 0.8964, 0.2488]}
+{"qid": "ovo_486", "task": "ASI", "t": 46.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.0964, 1.5221, 0.5024, 1.2285]}
+{"qid": "ovo_487", "task": "ASI", "t": 41.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [1.7751, 1.1472, 0.7817]}
+{"qid": "ovo_488", "task": "ASI", "t": 31.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1567, 0.7604, 1.0839, 0.9146]}
+{"qid": "ovo_489", "task": "ASI", "t": 111.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "D", "correct": 0, "ce": [0.3843, 0.7618, 0.2647, 0.3596]}
+{"qid": "ovo_490", "task": "ASI", "t": 87.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.2497, 0.095, 0.5363]}
+{"qid": "ovo_491", "task": "ASI", "t": 105.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.1857, 1.0661, 0.7866, 0.1584]}
+{"qid": "ovo_492", "task": "ASI", "t": 39.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [1.4595, 0.5325, 1.3582]}
+{"qid": "ovo_493", "task": "ASI", "t": 53.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.6105, 0.1877, 0.9708, 0.9149]}
+{"qid": "ovo_494", "task": "ASI", "t": 54.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1502, 0.0782, 0.1793, 0.3131]}
+{"qid": "ovo_495", "task": "ASI", "t": 45.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.2643, 0.8177, 0.1548, 0.5286]}
+{"qid": "ovo_496", "task": "ASI", "t": 30.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.6319, 0.4365, 0.5519, 0.098]}
+{"qid": "ovo_498", "task": "ASI", "t": 268.73, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1707, 0.4334, 0.4023, 0.4424]}
+{"qid": "ovo_499", "task": "ASI", "t": 307.38, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.1812, 0.6664, 1.1744, 0.7514]}
+{"qid": "ovo_500", "task": "ASI", "t": 77.62, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5173, 0.3147, 1.6387, 0.5159]}
+{"qid": "ovo_501", "task": "ASI", "t": 192.21, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.7386, 1.283, 0.9454, 0.9933]}
+{"qid": "ovo_502", "task": "ASI", "t": 168.06, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.6626, 0.23, 0.6705, 0.9952]}
+{"qid": "ovo_503", "task": "ASI", "t": 323.53, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.1687, 0.5324, 0.5415, 0.6575]}
+{"qid": "ovo_504", "task": "ASI", "t": 240.88, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.4068, 0.2268, 0.7346, 0.8496]}
+{"qid": "ovo_505", "task": "ASI", "t": 208.48, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.8286, 0.874, 0.8312, 0.4469]}
+{"qid": "ovo_506", "task": "ASI", "t": 190.98, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.642, 0.4485, 1.1675, 0.7984]}
+{"qid": "ovo_507", "task": "ASI", "t": 238.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.8119, 0.8371, 0.6775, 1.3571]}
+{"qid": "ovo_508", "task": "ASI", "t": 182.99, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [1.5024, 0.3845, 0.8303, 1.0317]}
+{"qid": "ovo_509", "task": "ASI", "t": 125.89, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [1.0726, 1.3161, 1.1769]}
+{"qid": "ovo_510", "task": "ASI", "t": 201.67, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.9344, 0.6889, 1.7931, 0.4009]}
+{"qid": "ovo_511", "task": "ASI", "t": 195.79, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.2214, 0.9188, 1.101, 0.7846]}
+{"qid": "ovo_512", "task": "ASI", "t": 55.85, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.4307, 0.642, 0.3968, 0.5702]}
+{"qid": "ovo_513", "task": "ASI", "t": 60.22, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.7453, 0.5623, 1.0902, 0.5662]}
+{"qid": "ovo_514", "task": "ASI", "t": 129.44, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1236, 1.0689, 1.6347, 1.0776]}
+{"qid": "ovo_515", "task": "ASI", "t": 158.37, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.7774, 0.9185, 0.5886, 0.9304]}
+{"qid": "ovo_516", "task": "ASI", "t": 107.84, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "D", "correct": 0, "ce": [0.4781, 0.5758, 0.2682, 0.4915]}
+{"qid": "ovo_517", "task": "ASI", "t": 132.14, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.7526, 0.3876, 0.7765, 0.8734]}
+{"qid": "ovo_518", "task": "ASI", "t": 255.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.4178, 0.7012, 0.7999, 1.0807]}
+{"qid": "ovo_519", "task": "ASI", "t": 337.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.6279, 0.4751, 0.4485, 0.3536]}
+{"qid": "ovo_520", "task": "ASI", "t": 228.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.5339, 0.6642, 0.374, 0.4832]}
+{"qid": "ovo_521", "task": "ASI", "t": 208.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.4922, 0.4592, 0.4996, 0.1944]}
+{"qid": "ovo_522", "task": "ASI", "t": 136.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.3933, 0.6326, 0.3535, 0.3445]}
+{"qid": "ovo_523", "task": "ASI", "t": 63.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.3044, 0.6788, 0.8785, 0.1225]}
+{"qid": "ovo_524", "task": "ASI", "t": 107.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.3407, 0.6819, 1.0222, 0.276]}
+{"qid": "ovo_526", "task": "ASI", "t": 49.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.107, 0.1751, 0.2612, 0.7882]}
+{"qid": "ovo_527", "task": "ASI", "t": 41.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.6443, 0.2795, 0.3307, 0.7178]}
+{"qid": "ovo_529", "task": "ASI", "t": 60.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.7369, 1.1102, 1.4455, 0.7801]}
+{"qid": "ovo_531", "task": "ASI", "t": 31.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3621, 0.119, 0.3226, 0.3612]}
+{"qid": "ovo_534", "task": "ASI", "t": 94.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.2337, 0.6847, 0.4617, 0.6817]}
+{"qid": "ovo_535", "task": "ASI", "t": 101.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.5249, 0.4794, 1.1399, 0.3131]}
+{"qid": "ovo_536", "task": "ASI", "t": 48.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.6907, 0.1551, 0.7136, 0.5103]}
+{"qid": "ovo_537", "task": "ASI", "t": 82.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.7629, 0.2257, 0.5367, 0.3734]}
+{"qid": "ovo_538", "task": "ASI", "t": 588.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.6192, 0.9819, 0.3041, 0.4299]}
+{"qid": "ovo_539", "task": "ASI", "t": 370.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.3799, 0.6484, 0.2757, 0.41]}
+{"qid": "ovo_540", "task": "ASI", "t": 405.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.5451, 0.1318, 0.8833, 0.2762]}
+{"qid": "ovo_541", "task": "ASI", "t": 530.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.0348, 0.3838, 1.274, 0.5757]}
+{"qid": "ovo_542", "task": "ASI", "t": 281.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.1719, 0.0978, 0.3106]}
+{"qid": "ovo_543", "task": "ASI", "t": 438.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.2285, 0.1568, 0.2084, 0.1453]}
+{"qid": "ovo_544", "task": "ASI", "t": 94.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5594, 0.117, 0.5702, 0.624]}
+{"qid": "ovo_545", "task": "ASI", "t": 309.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.4886, 0.2197, 0.4354, 0.1466]}
+{"qid": "ovo_546", "task": "ASI", "t": 147.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1736, 0.4709, 0.535, 0.5102]}
+{"qid": "ovo_547", "task": "ASI", "t": 484.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0923, 0.4569, 0.2706, 0.2235]}
+{"qid": "ovo_548", "task": "ASI", "t": 186.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.218, 0.3311, 0.4743, 0.1554]}
+{"qid": "ovo_549", "task": "ASI", "t": 123.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.7882, 0.6023, 0.4601, 0.2847]}
+{"qid": "ovo_550", "task": "ASI", "t": 413.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.1015, 0.0916, 0.1989, 0.1311]}
+{"qid": "ovo_551", "task": "ASI", "t": 450.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.11, 0.5255, 0.7783, 0.1955]}
+{"qid": "ovo_552", "task": "ASI", "t": 417.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.0454, 0.5787, 0.2365, 1.0449]}
+{"qid": "ovo_553", "task": "ASI", "t": 277.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.2886, 0.1414, 0.7382, 0.0638]}
+{"qid": "ovo_554", "task": "ASI", "t": 192.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.2054, 0.2077, 0.1458, 0.0402]}
+{"qid": "ovo_555", "task": "ASI", "t": 156.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0967, 0.1626, 0.523, 0.1203]}
+{"qid": "ovo_556", "task": "ASI", "t": 325.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.2771, 0.0846, 0.5391, 0.2619]}
+{"qid": "ovo_557", "task": "ASI", "t": 284.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.3556, 0.2264, 0.2677, 0.1041]}
+{"qid": "ovo_558", "task": "ASI", "t": 194.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.4162, 0.1191, 0.8028, 0.2662]}
+{"qid": "ovo_559", "task": "ASI", "t": 243.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0283, 0.2653, 0.4225, 0.471]}
+{"qid": "ovo_560", "task": "ASI", "t": 87.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.7169, 0.1205, 0.3924, 0.971]}
+{"qid": "ovo_561", "task": "ASI", "t": 159.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0757, 0.1169, 0.4001]}
+{"qid": "ovo_562", "task": "ASI", "t": 120.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0404, 0.6691, 1.1411, 0.3101]}
+{"qid": "ovo_563", "task": "ASI", "t": 446.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0178, 0.2202, 0.424, 0.4118]}
+{"qid": "ovo_564", "task": "ASI", "t": 138.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1962, 0.2954, 0.4887, 0.2298]}
+{"qid": "ovo_565", "task": "ASI", "t": 350.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.3523, 0.3864, 0.1881, 0.1128]}
+{"qid": "ovo_566", "task": "ASI", "t": 69.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.8567, 0.2618, 0.8737, 0.0487]}
+{"qid": "ovo_567", "task": "ASI", "t": 177.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.1126, 0.3877, 0.9703, 0.4664]}
+{"qid": "ovo_568", "task": "ASI", "t": 225.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.3006, 0.7855, 0.9529]}
+{"qid": "ovo_569", "task": "ASI", "t": 75.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5465, 0.1874, 0.5523, 0.6481]}
+{"qid": "ovo_570", "task": "ASI", "t": 368.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.0802, 0.1095, 0.1359, 0.2798]}
+{"qid": "ovo_571", "task": "ASI", "t": 264.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5827, 0.1042, 0.172, 0.4407]}
+{"qid": "ovo_572", "task": "ASI", "t": 221.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.2245, 0.4237, 0.6184, 0.08]}
+{"qid": "ovo_573", "task": "ASI", "t": 304.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "A", "correct": 0, "ce": [0.3085, 0.1176, 0.3676, 0.4481]}
+{"qid": "ovo_574", "task": "ASI", "t": 134.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.0453, 0.3025, 0.3952, 0.6096]}
+{"qid": "ovo_575", "task": "ASI", "t": 362.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "C", "correct": 0, "ce": [0.5289, 0.1887, 0.3862, 0.4121]}
+{"qid": "ovo_576", "task": "ASI", "t": 329.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.3445, 0.3675, 0.9385, 0.1651]}
+{"qid": "ovo_577", "task": "ASI", "t": 386.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "B", "correct": 0, "ce": [0.1905, 0.4195, 0.1738, 0.1551]}
+{"qid": "ovo_578", "task": "ASI", "t": 319.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "A", "correct": 0, "ce": [0.2484, 0.2134, 0.5813, 0.0414]}
+{"qid": "ovo_579", "task": "ASI", "t": 210.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.6506, 0.0809, 0.6602, 0.5667]}
+{"qid": "ovo_580", "task": "ASI", "t": 458.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.284, 0.5166, 0.1065, 0.2967]}
+{"qid": "ovo_581", "task": "ASI", "t": 356.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "B", "correct": 0, "ce": [0.0233, 0.6183, 0.1691, 0.3778]}
+{"qid": "ovo_582", "task": "ASI", "t": 303.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "C", "correct": 0, "ce": [0.0726, 0.7728, 0.5136, 0.4306]}
+{"qid": "ovo_583", "task": "ASI", "t": 204.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "D", "correct": 0, "ce": [0.1867, 0.1801, 0.3104, 0.2587]}
+{"qid": "ovo_584", "task": "ASI", "t": 222.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "C", "correct": 0, "ce": [0.3794, 0.6635, 0.4233, 0.0326]}
+{"qid": "ovo_585", "task": "ASI", "t": 265.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.5227, 0.0831, 0.3794, 0.1561]}
+{"qid": "ovo_586", "task": "ASI", "t": 181.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "B", "correct": 0, "ce": [0.768, 0.3352, 0.3147, 0.4724]}
+{"qid": "ovo_587", "task": "ASI", "t": 234.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.7996, 0.2772, 0.7015, 0.4363]}
+{"qid": "ovo_591", "task": "ASI", "t": 46.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "A", "correct": 1, "ce": [0.2842, 0.3546, 1.6706, 1.2399]}
+{"qid": "ovo_598", "task": "ASI", "t": 40.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "A", "correct": 0, "ce": [0.9699, 1.3142, 0.0606, 0.752]}
+{"qid": "ovo_603", "task": "ASI", "t": 33.0, "mode": "prefix", "window": 64.0, "pred": "D", "gt": "D", "correct": 1, "ce": [0.5562, 1.3778, 1.5212, 0.2081]}
+{"qid": "ovo_605", "task": "ASI", "t": 38.0, "mode": "prefix", "window": 64.0, "pred": "C", "gt": "C", "correct": 1, "ce": [0.6324, 0.9477, 0.0514, 0.5764]}
+{"qid": "ovo_607", "task": "ASI", "t": 30.0, "mode": "prefix", "window": 64.0, "pred": "B", "gt": "B", "correct": 1, "ce": [0.3542, 0.1403, 0.2006, 0.7101]}
+{"qid": "ovo_630", "task": "ASI", "t": 60.0, "mode": "prefix", "window": 64.0, "pred": "A", "gt": "D", "correct": 0, "ce": [0.202, 0.316, 0.2083, 0.3743]}

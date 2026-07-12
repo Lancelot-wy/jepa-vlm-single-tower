@@ -1,0 +1,26 @@
+sb: 421 questions (mode=prefix, window=64.0)
+Loading weights:   0%|          | 0/750 [00:00<?, ?it/s]Loading weights: 100%|██████████| 750/750 [00:00<00:00, 38315.34it/s]
+[transformers] Qwen3VLVisionModel does not expose input embeddings. Gradients cannot flow back to the token embeddings when using adapters or gradient checkpointing. Override `get_input_embeddings` to fully support those features, or set `_input_embed_layer` to the attribute name that holds the embeddings.
+loaded 864 tensors from /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_mtp1/step_4000
+50/421  running acc 70.00%
+100/421  running acc 71.00%
+150/421  running acc 71.33%
+200/421  running acc 72.50%
+250/421  running acc 68.40%
+300/421  running acc 65.67%
+350/421  running acc 60.57%
+400/421  running acc 56.25%
+
+=== sb streaming MCQ (prefix) ===
+decode failures: 0
+overall (this run): 227/421 = 53.92%
+  Action Perception 76/128 = 59.38%
+  Attribute Perception 22/31 = 70.97%
+  Causal Reasoning 7/8 = 87.50%
+  Clips Summarize 1/1 = 100.00%
+  Counting     31/126 = 24.60%
+  Event Understanding 15/23 = 65.22%
+  Object Perception 63/88 = 71.59%
+  Prospective Reasoning 1/2 = 50.00%
+  Spatial Understanding 2/2 = 100.00%
+  Text-Rich Understanding 9/12 = 75.00%
