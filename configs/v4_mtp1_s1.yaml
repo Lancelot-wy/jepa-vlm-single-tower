@@ -1,0 +1,7 @@
+# EXP-07: v4_mtp1 补第二种子 (V4 判读唯一保留项 — mtp1 是唯一四表全正的臂, 单种子不可信).
+# 与 v4_mtp1 唯一差异 = seed. 判读: 与 v4_ctrl_s0/s1 两个对照种子分别配对
+# (scripts/summarize_streaming.py), 四表方向仍全正且合并显著才升级结论, 否则维持 V4 判负.
+_base_: v4_mtp1.yaml
+train:
+  seed: 1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/v4_mtp1_s1
