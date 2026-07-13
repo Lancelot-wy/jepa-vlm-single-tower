@@ -1,0 +1,9 @@
+# R3-lite 处理臂：在 r2_sft_baseline 的一切设定上只改 loss（CE + 0.2·回归，v2.1 mask 50%）。
+# 对照 = 已训完的 r2_sft_baseline（不重跑）。数据（未过滤 qa_train.jsonl）、2000 步、
+# 超参全部继承，严格控制变量。启动时不要加 min_flow 覆盖。
+_base_: r2_sft_baseline.yaml
+model:
+  mask_variant: v2.1
+train:
+  lambda_reg: 0.2
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3lite_joint

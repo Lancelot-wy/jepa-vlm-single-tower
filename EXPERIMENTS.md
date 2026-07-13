@@ -112,71 +112,47 @@ done
 
 ---
 
-# Round 3：主线终审（Phase B pilot，联合 vs 纯 CE）
+# Round 3（lite）：主线终审——只改 loss 的最小控制变量对照
 
-Round-2 已证明表征增益真实存在（时序 probe +4~4.6pp，非"见过视频"效应，8000 步稳固）。
-本轮直接回答总命题：**加了回归目标的联合训练，在时序任务上能否打赢同配置的纯 CE？**
-probe 链（Diving48 / ckpt 扫描）降级为诊断工具：失败时归因用，成功时补机理证据用，
-**不阻塞本轮**。
+回答总命题：**CE 训练加上 masked latent 回归目标，能否更会答时序问题？**
 
-## 数据标准（全局常量，不再是变量）
+## 设计（一句话：以已训完的 r2_sft_baseline 为锚，只改 loss，其他一个字不动）
 
-**同一比较里的所有臂，训练数据必须是同一份文件**：`qa_train_flow.jsonl` +
-`min_flow=8.42`。评测集同理（val 也补 flow、同阈值过滤——静态片段帧序不可判，
-只稀释灵敏度）。据此：**r2_sft_baseline（未过滤数据、2000 步）退役**，不再充当
-任何对照，只用于评测管线热身；Round-2 probe 表中 sft 列与其他臂的对比按"数据
-不一致"降级解读，r3_sft 会顺带产出干净版锚点。
+| 臂 | loss | 视频输入 | 是否要训 |
+|---|---|---|---|
+| r2_sft_baseline | 纯 CE | 干净（v1） | **复用，不重跑** |
+| r3lite_joint | CE + 0.2·reg | v2.1 mask 50% | 训（~1h） |
+| r3lite_joint_m25 | CE + 0.2·reg | v2.1 mask 25% | 训（~1h） |
 
-## 实验臂（三臂：对照 / 处理 / 剂量）
+三臂共享：未过滤 qa_train.jsonl（**不要重新生成 manifest，用 r2_sft 训练时的同一份文件**）、
+2000 步、warmup 200、MTP off、ViT 放开、temporal_qa_ratio 0.3。启动时**不加** min_flow 覆盖。
 
-| 臂 | 配置 | loss | 视频输入 | 回答 |
-|---|---|---|---|---|
-| r3_sft | `configs/r3_sft.yaml` | 纯 CE | 干净（v1） | 反事实对照 |
-| r3_joint | `configs/r3_joint.yaml` | CE + 0.2·reg | v2.1 mask 50% | 主命题 |
-| r3_joint_m25 | `configs/r3_joint_m25.yaml` | CE + 0.2·reg | v2.1 mask 25% | 50% 是否过高 |
-
-其余全部相同：同 4000 步、warmup 400、MTP off、ViT 放开、temporal_qa_ratio=0.3、
-save_every=1000（每档 ckpt 可评，顺带回答最优停点）。
+说明：本轮放弃运动过滤——过滤是为 Phase A 纯回归引入的，CE 不需要；未过滤只会让
+处理臂吃亏（静态片段稀释回归信号），属于**保守检验**：在不利数据上赢下来的结论更硬。
 
 ## 运行
 
 ```bash
-# 0) 一次性：QA manifest 与 val manifest 都补 flow 字段（同一脚本、同一阈值）
-python scripts/compute_flow.py --manifest $DATA/llava_video/qa_train.jsonl \
-    --out $DATA/llava_video/qa_train_flow.jsonl --method framediff --workers 16
-python scripts/compute_flow.py --manifest $DATA/llava_video/val.jsonl \
-    --out $DATA/llava_video/val_flow.jsonl --method framediff --workers 16
+# 1) 两个新臂（不加 min_flow）
+CONFIG=configs/r3lite_joint.yaml     bash scripts/cluster/train_multinode.sh
+CONFIG=configs/r3lite_joint_m25.yaml bash scripts/cluster/train_multinode.sh
 
-# 1) 三臂同批提交（MIN_FLOW 全局统一 8.42）
-for C in r3_sft r3_joint r3_joint_m25; do
-  CONFIG=configs/$C.yaml EXTRA_OVERRIDES='train.min_flow=8.42' bash scripts/cluster/train_multinode.sh
+# 2) 评测：三臂同 manifest 同 seed（r2_sft 现在就能先跑，不用等训练）
+for E in r2_sft_baseline r3lite_joint r3lite_joint_m25; do
+  python -m jepa_vlm.probes.temporal_qa_eval \
+      --config <outputs>/$E/config.json --ckpt <outputs>/$E/step_2000 \
+      --manifest $DATA/llava_video/val.jsonl --max-clips 500
 done
-
-# 1.5) 训练期间热身：旧 r2_sft ckpt 先过一遍评测链路（结果只作参考，不进对照）
-# 2) held-out 时序 QA（单卡；三臂每档 ckpt，同 manifest 同 seed 同 min-flow）
-python -m jepa_vlm.probes.temporal_qa_eval \
-    --config <outputs>/r3_joint/config.json --ckpt <outputs>/r3_joint/step_4000 \
-    --manifest $DATA/llava_video/val_flow.jsonl --min-flow 8.42 --max-clips 500
 ```
 
-**m25 判读（预注册）**：`m25 ≈ m50 > sft` 比例不敏感，维持 0.5；`m25 > m50` 50% 过高，
-降比例；`m25 ≈ sft < m50` 回归增益依赖重 mask，不降。
+## 判定（预注册）
 
-## 读数与判定（三层，由近及远）
+1. **主命题**：joint − sft ≥ +3pp（overall，N=500 二项噪声 ~2.2pp）→ 回归目标 work；
+2. **剂量**：m25 ≈ m50 → 比例不敏感；m25 > m50 → 50% 过高，后续降比例；
+3. **joint ≤ sft 时不下"没用"结论**——补一对过滤数据的 joint/sft（configs/r3_joint.yaml +
+   r3_sft.yaml 仍保留，即为此分支准备）分辨"方法不行"还是"静态数据拖累"。
+4. 训练中盯 joint 臂 ce_loss vs sft 臂历史曲线，明显劈叉 = 梯度冲突，降 λ=0.1 重跑。
 
-1. **训练稳定性**（跑的过程中就看）：joint 臂的 ce_loss 与 reg_loss 曲线。若 CE 明显高于
-   sft 臂且不收敛 → 梯度冲突（方案第 6 节风险项），先调小 λ（0.1）或 mask_ratio 再重跑。
-2. **held-out 时序 QA**（主判定，零下载）：`temporal_qa_eval` 的 overall 及 reverse/shuffle
-   分项。N=500 时二项噪声 ~2.2pp。**判定：joint − sft ≥ +3pp 且各档 ckpt 方向一致 → 主线
-   修改 work**；差距 <2pp 或反向 → 不下结论，进入诊断（Diving48 probe + ckpt 扫描归因）。
-   注意：不要拿未训练 base 的绝对值来比——base 没见过 4-token pooled 布局，属于分布外。
-3. **正式 benchmark**（结论对外前必补）：lmms-eval 跑 TempCompass / Vinoground / TOMATO
-   （时序主指标）+ VideoMME / MVBench（不退化检验）。数据集需开发机代理下载后传集群，
-   与 1)/2) 并行准备，不阻塞判定。
-
-## 诊断工具（不通过时再启用）
-
-- Diving48 类别 probe：区分"动作语义"与"低级运动方向"（下载好即可跑，run_probes.sh 追加）。
-- ckpt 扫描：formal 跑的 2k/4k/6k/8k 档 + 本轮每千步档，画 probe/QA 随步数曲线找退化点。
-- 已知注意事项：joint 臂的 CE 在被 mask 的视频上训练（这是"回归目标包"的一部分）；若怀疑
-  mask 本身伤 QA，可加第三臂 r3_joint + mask_ratio=0.25 消融。
+与 vlm-jepa 侧的关系：训练层面两边永远无法控制变量（数据/管线/架构均不同），
+统一的是**评测尺子**（VLMEvalKit / TempCompass 线照旧并行）；不为跨仓库可比性
+迁就本仓库的训练设定。
