@@ -1,6 +1,0 @@
-# R3-lite 剂量臂：同 r3lite_joint，仅 mask 比例 50% -> 25%（回答"50% 是否过高伤 CE"）。
-_base_: r3lite_joint.yaml
-model:
-  mask_ratio: 0.25
-train:
-  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3lite_joint_m25
