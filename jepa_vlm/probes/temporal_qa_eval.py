@@ -60,6 +60,9 @@ def main():
     ap.add_argument("--config", required=True, help="run config.json")
     ap.add_argument("--ckpt", default="", help="checkpoint dir; empty = untrained (OOD, see docstring)")
     ap.add_argument("--manifest", required=True)
+    ap.add_argument("--min-flow", type=float, default=0.0,
+                    help="drop clips below this motion score (use the global threshold, "
+                         "e.g. 8.42, so eval and training share one data standard)")
     ap.add_argument("--max-clips", type=int, default=500)
     ap.add_argument("--batch-size", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
@@ -82,7 +85,7 @@ def main():
                           cfg.train.num_frames * cfg.model.tokens_per_frame,
                           cfg.train.max_text_len)
 
-    items = load_manifest(args.manifest)[: args.max_clips]
+    items = load_manifest(args.manifest, min_flow=args.min_flow)[: args.max_clips]
     stats = {"none": [0, 0], "shuffle": [0, 0], "reverse": [0, 0]}  # [correct, total]
 
     buf = []
