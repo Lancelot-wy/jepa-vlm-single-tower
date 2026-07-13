@@ -1,0 +1,6 @@
+# mask ratio 扫描: 25%。其余与 r3_joint(=50%) 完全一致。
+_base_: r3_joint.yaml
+model:
+  mask_ratio: 0.25
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_joint_m25
