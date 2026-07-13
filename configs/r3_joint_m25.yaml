@@ -1,0 +1,11 @@
+# R3 第三臂: 联合训练 + 低 mask 比例 (0.25)。
+# 回答: 50% mask 是否过高、伤害 CE/QA 学习 (joint 臂的 CE 在被遮蔽视频上训练)。
+# 判读: m25 vs m50 (r3_joint) vs sft 三点比较——
+#   m25 ≈ m50 > sft: mask 比例不敏感, 维持 0.5;
+#   m25 > m50      : 50% 过高, 后续联合训练降到 0.25;
+#   m25 ≈ sft      : 回归增益本身依赖高 mask, 降比例得不偿失。
+_base_: r3_joint.yaml
+model:
+  mask_ratio: 0.25
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_joint_m25
