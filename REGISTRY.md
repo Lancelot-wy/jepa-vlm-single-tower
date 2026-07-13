@@ -23,3 +23,18 @@
   新臂必须 ≥2 种子，或同时与两个 ctrl 种子配对复核。
 - **统计纪律**：所有 delta 必须配逐题配对检验（McNemar/配对 t），预注册判定线，
   ±1~2pp 级别的单次读数不构成 finding。
+
+## 评测口径（哪把尺子测的哪些数，禁止混用）
+
+| 结果 | 尺子 | 绝对值可否外报 |
+|---|---|---|
+| vlm-jepa 8 臂 MVBench（base 55.65 等） | vlm-jepa 自研 eval_mvbench_gen（32帧/裸模板/生成式） | 否，待 EXP-06 重锚 |
+| EXP-04 benchmark（MVBench 49.59 / TempCompass 57.78） | 本仓库 mcq_eval（pooled 管线，似然） | **永不可**（见下） |
+| EXP-04 held-out 时序 QA | 本仓库 temporal_qa_eval | 否（内部判定用） |
+| EXP-05 OVO/StreamingBench | 本仓库 streaming_eval（官方式协议自实现） | 否（内部配对判定用） |
+
+规则：① 已有判定全部基于同尺内逐题配对差，不因换尺子推翻；② **绝对值禁止跨尺子
+比较、禁止对外报**——对外唯一口径是 VLMEvalKit（EXP-06 建立）；③ 本仓库 pooled
+4-token 管线的模型结构上无法进 VLMEvalKit，其绝对值永远仅内部有效，这是架构决定
+而非历史遗留；④ 若 EXP-06 发现某尺内 delta 在强协议下消失，记为"格式效应" finding，
+不改写尺内结论，但降级其外部意义。
