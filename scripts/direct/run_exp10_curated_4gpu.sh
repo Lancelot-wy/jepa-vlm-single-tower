@@ -32,6 +32,7 @@ RAW_DIR="${DATA_ROOT}/raw"
 RAW_QA="${RAW_DIR}/qa_train.jsonl"
 CLEAN_QA="${DATA_ROOT}/qa_train_clean.jsonl"
 AUDIT_REPORT="${DATA_ROOT}/source_audit.json"
+PREP_FINGERPRINT="${DATA_ROOT}/prep_fingerprint.txt"
 
 ARMS=(
   exp10_curated_sft_s0
@@ -126,11 +127,35 @@ if "<missing>" in sources:
 PY
 }
 
+prep_fingerprint() {
+  "$PY" - "$PROJECT/$REGISTRY" "$TRAIN_SOURCES" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+registry, sources = sys.argv[1:]
+h = hashlib.sha256()
+h.update(pathlib.Path(registry).read_bytes())
+h.update(b"\0")
+h.update(sources.encode())
+print(h.hexdigest())
+PY
+}
+
 prepare_data() {
   load_env; source_args
   audit_sources
   mkdir -p "$RAW_DIR"
-  if [[ ! -s "$RAW_QA" || "${FORCE_PREP:-0}" == 1 ]]; then
+  local fingerprint rebuild=0
+  fingerprint="$(prep_fingerprint)"
+  if [[ "${FORCE_PREP:-0}" == 1 || ! -s "$RAW_QA" || ! -s "$CLEAN_QA" ]]; then
+    rebuild=1
+  elif [[ ! -f "$PREP_FINGERPRINT" || "$(<"$PREP_FINGERPRINT")" != "$fingerprint" ]]; then
+    rebuild=1
+    info "source registry or TRAIN_SOURCES changed; rebuilding stale manifest"
+  fi
+  if (( rebuild )); then
+    rm -f "$RAW_QA" "$CLEAN_QA" "$RAW_QA.report.json"
     info "building deterministic, locally-resolved caption QA manifest from: ${TRAIN_SOURCES}"
     (
       cd "$PROJECT"
@@ -138,10 +163,10 @@ prepare_data() {
         --out "$RAW_QA"
     )
   else
-    info "reusing raw manifest: $RAW_QA (set FORCE_PREP=1 to rebuild)"
+    info "reusing manifest with matching source fingerprint: $RAW_QA"
   fi
   [[ -s "$RAW_QA" ]] || die "caption manifest is empty"
-  if [[ ! -s "$CLEAN_QA" || "${FORCE_PREP:-0}" == 1 ]]; then
+  if (( rebuild )); then
     info "removing direct benchmark video-ID/path collisions"
     (
       cd "$PROJECT"
@@ -150,6 +175,7 @@ prepare_data() {
   fi
   [[ -s "$CLEAN_QA" ]] || die "benchmark-clean manifest is empty"
   gate_manifest
+  printf '%s\n' "$fingerprint" > "$PREP_FINGERPRINT"
   info "data preparation passed. Framediff is deliberately not used as a filter in EXP-10."
 }
 
