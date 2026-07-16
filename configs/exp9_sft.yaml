@@ -1,0 +1,7 @@
+# EXP-09 对照臂: 纯 CE @ 扩容数据(178K 多子集 + NExT-QA train) + v2 时序增广。
+# 与 exp9_mse 唯一差异 = 无 MSE。数据/增广/超参/步数与 mse 臂逐项相同。
+_base_: r3_sft.yaml
+train:
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp09/qa_train_flow.jsonl
+  temporal_qa_templates: v2
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp9_sft

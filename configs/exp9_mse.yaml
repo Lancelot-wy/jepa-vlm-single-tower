@@ -1,0 +1,6 @@
+# EXP-09 处理臂: CE + 0.2·帧预测MSE @ 扩容数据 + v2 增广。与 exp9_sft 唯一差异 = MSE。
+_base_: r3_mse.yaml
+train:
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp09/qa_train_flow.jsonl
+  temporal_qa_templates: v2
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp9_mse

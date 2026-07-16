@@ -113,6 +113,9 @@ class TrainConfig:
     max_text_len: int = 256
     temporal_qa_ratio: float = 0.3     # phase b: fraction of samples replaced by on-the-fly
                                        # temporal-order QA (shuffle/reverse, yes/no)
+    temporal_qa_templates: str = "v1"  # v1 = 帧序是非题（EXP-04/08 行为）；v2 = 5 模板族
+                                       # (order_yn/order_mcq/playback/speed/pan)，对症
+                                       # TempCompass 的 direction/speed/order 弱项（EXP-09）
 
 
 @dataclass

@@ -122,33 +122,118 @@ def collate_visual(batch: list[dict]) -> dict:
 # ---------------------------------------------------------------------- Phase B
 class QAVideoDataset(ManifestVideoDataset):
     """Phase B: (video, question, answer). With prob `temporal_qa_ratio` the QA pair is
-    replaced by an on-the-fly temporal-order QA (shuffled/reversed/normal frames)."""
+    replaced by an on-the-fly temporal augmentation sample. Template families:
 
-    def __init__(self, *args, temporal_qa_ratio: float = 0.3, **kwargs):
+      v1: order_yn only（帧序对不对，是非题）— EXP-04/08 的行为，保持不变
+      v2: 均匀混合 5 个模板（对 TempCompass 的 direction/speed/order 弱项对症）:
+          order_yn    帧序是非题（同 v1）
+          order_mcq   帧序三选一：正常/倒放/打乱
+          playback    正放 vs 倒放 二选一 MCQ（方向感知）
+          speed       正常速 vs 2x 速 二选一 MCQ（帧距加倍模拟快放，标签自生成）
+          pan         静帧滑窗合成"镜头左移/右移"二选一 MCQ（运动方向，标签自生成）
+    所有标签来自我们自己的变换，零人工标注；两臂共享同一增广 -> 配对不受影响。"""
+
+    V2_TEMPLATES = ("order_yn", "order_mcq", "playback", "speed", "pan")
+
+    def __init__(self, *args, temporal_qa_ratio: float = 0.3,
+                 temporal_qa_templates: str = "v1", **kwargs):
         super().__init__(*args, **kwargs)
         self.temporal_qa_ratio = temporal_qa_ratio
+        assert temporal_qa_templates in ("v1", "v2")
+        self.temporal_qa_templates = temporal_qa_templates
 
     TEMPORAL_Q = "Are the frames of this video shown in the correct temporal order? Answer yes or no."
+
+    # ---------------- template implementations (frames: uint8 (T,H,W,3)) ----------------
+    def _tpl_order_yn(self, frames, rng):
+        corrupt = bool(rng.integers(0, 2))
+        if corrupt:
+            if rng.integers(0, 2):
+                frames = frames[::-1].copy()
+            else:
+                frames = frames[rng.permutation(len(frames))].copy()
+        return frames, self.TEMPORAL_Q, ("no" if corrupt else "yes")
+
+    def _tpl_order_mcq(self, frames, rng):
+        kind = int(rng.integers(0, 3))  # 0 normal / 1 reversed / 2 shuffled
+        if kind == 1:
+            frames = frames[::-1].copy()
+        elif kind == 2:
+            frames = frames[rng.permutation(len(frames))].copy()
+        q = ("Which best describes the frame order of this video?\nOptions:\n"
+             "(A) correct chronological order\n(B) reversed\n(C) randomly shuffled\n"
+             "Answer with the option's letter.")
+        a = ["(A) correct chronological order", "(B) reversed", "(C) randomly shuffled"][kind]
+        return frames, q, a
+
+    def _tpl_playback(self, frames, rng):
+        backward = bool(rng.integers(0, 2))
+        if backward:
+            frames = frames[::-1].copy()
+        q = ("Is this video playing forward or backward?\nOptions:\n"
+             "(A) forward\n(B) backward\nAnswer with the option's letter.")
+        return frames, q, ("(B) backward" if backward else "(A) forward")
+
+    def _tpl_speed(self, frames_fast_flag):
+        fast = frames_fast_flag
+        q = ("Is this video played at normal speed or fast (2x) speed?\nOptions:\n"
+             "(A) normal speed\n(B) fast (2x) speed\nAnswer with the option's letter.")
+        return q, ("(B) fast (2x) speed" if fast else "(A) normal speed")
+
+    def _tpl_pan(self, frames, rng):
+        """用中间帧合成滑窗序列：窗口从左到右或从右到左，标签 = 视野移动方向。"""
+        base = frames[len(frames) // 2]
+        H, W = base.shape[:2]
+        cw = max(int(W * 0.6), 32)
+        span = W - cw
+        T = len(frames)
+        offs = np.linspace(0, max(span, 1) - 1, T).astype(int)
+        right = bool(rng.integers(0, 2))  # True: 视野向右移
+        if not right:
+            offs = offs[::-1]
+        frames = np.stack([base[:, o:o + cw] for o in offs])
+        q = ("Is the camera view moving left or right in this video?\nOptions:\n"
+             "(A) left\n(B) right\nAnswer with the option's letter.")
+        return frames, q, ("(B) right" if right else "(A) left")
 
     def __getitem__(self, i: int):
         it = self.items[i]
         rng = np.random.default_rng(None if self.training else self.seed * 100003 + i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
+
+        # 先选模板再解码（speed 模板需要改采样帧率：帧距 x2 = 2 倍速）
+        template = None
+        if self.training and rng.random() < self.temporal_qa_ratio:
+            if self.temporal_qa_templates == "v1":
+                template = "order_yn"
+            else:
+                template = str(rng.choice(self.V2_TEMPLATES))
+        fps = self.sample_fps
+        speed_fast = False
+        if template == "speed":
+            speed_fast = bool(rng.integers(0, 2))
+            if speed_fast:
+                fps = self.sample_fps / 2.0
+
         frames = decode_frames(
-            path, self.num_frames, self.sample_fps, self.frame_sampling,
+            path, self.num_frames, fps, self.frame_sampling,
             start=it.get("start"), end=it.get("end"),
             random_offset=self.training, rng=rng,
         )
-        question, answer = it.get("question", ""), it.get("answer", "")
-        if self.training and rng.random() < self.temporal_qa_ratio:
-            corrupt = bool(rng.integers(0, 2))
-            if corrupt:
-                if rng.integers(0, 2):
-                    frames = frames[::-1].copy()
-                else:
-                    perm = rng.permutation(len(frames))
-                    frames = frames[perm].copy()
-            question, answer = self.TEMPORAL_Q, ("no" if corrupt else "yes")
+
+        if template is None:
+            question, answer = it.get("question", ""), it.get("answer", "")
+        elif template == "order_yn":
+            frames, question, answer = self._tpl_order_yn(frames, rng)
+        elif template == "order_mcq":
+            frames, question, answer = self._tpl_order_mcq(frames, rng)
+        elif template == "playback":
+            frames, question, answer = self._tpl_playback(frames, rng)
+        elif template == "speed":
+            question, answer = self._tpl_speed(speed_fast)
+        elif template == "pan":
+            frames, question, answer = self._tpl_pan(frames, rng)
+
         pixel_values, grid = patchify(
             resize_center_crop(frames, self.frame_size), self.duplicate_frames
         )
