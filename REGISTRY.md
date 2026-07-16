@@ -11,8 +11,8 @@
 | EXP-05 | V4 流式线 | 8B-LoRA，11 臂（S1/S2/双CE消融/双种子），OVO+StreamingBench | **关闭（预注册负结果）** | S2 净负；S1 未确立；dvce25 显著更差（正则假说否定）；种子噪声 ±3.1pp | results/v4_streaming_eval + V4_VERDICT.md |
 | EXP-06 | vlm-jepa 评测锚定 | VLMEvalKit base 锚定 + 5 模型 × MVBench/TempCompass | 开放 | — | vlm-jepa 仓库 VLMEVALKIT.md |
 | EXP-07 | mtp1 补种子（8B） | V4 判读唯一保留项（四表全正、幅度不足） | 待定（低优先级，仅闲置算力） | — | V4_VERDICT.md 第 3 条 |
-| EXP-08 | 无 mask 纯 MSE 收益（2B） | r3_mse vs r3_sft，2×2 种子，MVBench/TempCompass 配对 | **开放（当前主线）** | — | EXECUTE_NOW.md 阶段 1 |
-| EXP-09 | 数据扩容 + v2 时序增广 | 178K 多子集 + NExT-QA train + 5 模板增广；exp9_{sft,mse}×2 种子 | 开放（依赖数据准备；污染检查为硬门槛） | — | EXECUTE_NOW.md 阶段 2 |
+| EXP-08 | 无 mask 纯 MSE 收益（旧小数据） | r3_mse vs r3_sft，2×2 种子 | **撤销**（旧数据 2.5 万 QA×20 epoch 不健康，并入 EXP-09 直接在扩充数据上测；r3_* 新配置不提交） | — | — |
+| EXP-09 | 扩充数据上的纯 MSE 收益 | 178K 多子集 + NExT-QA train + v2 增广；exp9_{sft,mse}×2 种子 + 可选 λ=0.5 探针；λ 默认 0.2（方案起点值，本形态未扫） | **开放（当前唯一主线）**；污染检查为硬门槛 | — | EXECUTE_NOW.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 

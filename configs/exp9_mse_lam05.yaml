@@ -1,0 +1,6 @@
+# 可选 λ 剂量探针: MSE 权重 0.2 -> 0.5, 单种子。主判定不依赖它;
+# 仅当 exp9_mse vs exp9_sft 出正向后, 用它判断 λ 该往哪个方向调。
+_base_: exp9_mse.yaml
+train:
+  lambda_reg: 0.5
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp9_mse_lam05
