@@ -12,11 +12,15 @@
 | EXP-06 | vlm-jepa 评测锚定 | VLMEvalKit base 锚定 + 5 模型 × MVBench/TempCompass | 开放 | — | vlm-jepa 仓库 VLMEVALKIT.md |
 | EXP-07 | mtp1 补种子（8B） | V4 判读唯一保留项（四表全正、幅度不足） | 待定（低优先级，仅闲置算力） | — | V4_VERDICT.md 第 3 条 |
 | EXP-08 | 无 mask 纯 MSE 收益（旧小数据） | r3_mse vs r3_sft，2×2 种子 | **撤销**（旧数据 2.5 万 QA×20 epoch 不健康，并入 EXP-09 直接在扩充数据上测；r3_* 新配置不提交） | — | — |
-| EXP-09 | 扩充数据上的纯 MSE 收益 | 178K 多子集 + NExT-QA train + v2 增广；exp9_{sft,mse}×2 种子 + 可选 λ=0.5 探针；λ 默认 0.2（方案起点值，本形态未扫） | **开放（当前唯一主线）**；污染检查为硬门槛 | — | EXECUTE_NOW.md |
+| EXP-09 | 扩充数据上的纯 MSE 收益（原方案） | LLaVA-178K + NExT-QA train + v2 增广 | **暂停 / 不得作为正式主线启动**：NExT-QA train 未证实，LLaVA 复合来源仅靠路径名与 basename 不能完成来源级去污染 | — | EXECUTE_NOW.md（历史记录） |
+| EXP-10 | 来源审计的高质量字幕数据 | Vript（默认）→ 仅在审计通过后追加 InternVid；CE vs CE+MSE × 2 seeds，4,000 步，v2 增广 | **开放（当前唯一主线）**；路径/ID 去重、来源白名单和本地视频可解析均为开训硬门槛 | — | CURATED_EXP10.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 
-- **训练数据**：`qa_train_flow.jsonl`，`min_flow=8.42`（EXP-04/05 现行标准）。
+- **训练数据**：EXP-04/05 的 `qa_train_flow.jsonl`/`min_flow=8.42` 仅是历史 LLaVA
+  分布的记录，**不得迁移**到新来源。EXP-10 使用来源审计后的
+  `qa_train_clean.jsonl`，`min_flow=0`；`framediff` 只保留为诊断指标，不能冒充
+  真实光流或时间语义质量标签。
 - **CE 代码**：HEAD 与 EXP-04/05 训练代码逐字节一致（model.py 自 V4 判负后零改动）；
   EXP-02 时代旧 CE 公式经单元测试与现公式数值等价。
 - **纯 CE 锚点**（新实验直接配对，不得重训）：2B 用 `r3_sft`；8B 用 `v4_ctrl_s0/s1`（双种子）。

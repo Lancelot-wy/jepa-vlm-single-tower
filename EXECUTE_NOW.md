@@ -1,6 +1,12 @@
-# EXECUTE_NOW — EXP-09：扩充数据上的纯 MSE 收益（单阶段，集群侧执行手册）
+# EXECUTE_NOW — EXP-09 历史方案（已暂停，不得执行）
 
-> 自足手册，按顺序执行。任何一步与描述不符 → 停下报告，**不要改代码语义或超参**。
+> **停止线（2026-07-16）**：本手册保留作为历史设计记录，不能再据此提交训练。
+> 原因是 NExT-QA 官方 train split 尚未在挂载盘证实，且 LLaVA-Video 的复合来源不
+> 能只靠路径关键词和 basename 完成来源级去污染。当前唯一可启动主线是
+> [CURATED_EXP10.md](CURATED_EXP10.md) 的 `run_exp10_curated_4gpu.sh`；它先验证
+> 本地视频解析和来源清单，再构建训练 manifest。
+
+> 以下内容仅供追溯旧方案，按顺序执行。任何一步与描述不符 → 停下报告，**不要改代码语义或超参**。
 > 平台：vivolm（L40s，4 卡/节点），`scripts/cluster/submit_batch.sh` 提交，
 > 每臂 NODES=2（有效 batch 128）。**EXP-08（旧小数据）已撤销，直接在扩充数据上测。**
 

@@ -1,0 +1,7 @@
+# EXP-10 control: source-audited dense-caption video QA (no JEPA MSE).
+# The selected manifest intentionally excludes benchmark-derived QA mixtures.
+_base_: exp9_sft.yaml
+train:
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp10_curated/qa_train_clean.jsonl
+  min_flow: 0.0  # framediff is diagnostic only; 8.42 was an old LLaVA-specific cut
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp10_curated_sft_s0

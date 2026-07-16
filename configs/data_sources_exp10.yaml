@@ -1,0 +1,103 @@
+# Curated video-text sources for EXP-10.
+#
+# This file is deliberately a source registry, not a claim that every listed
+# source is ready for training. `enabled: true` means the source is selected by
+# default.  `scripts/audit_data_sources.py --strict` must pass on the training
+# host before `scripts/prepare_caption_mix.py` will build a manifest.
+#
+# Benchmark-facing policy:
+#   * Do not add LLaVA-Video, Tarsier2, ActivityNet(/QA), NExT-QA, Charades,
+#     PerceptionTest, AGQA/STAR, TVQA, or their derived mixtures to this run.
+#   * Every emitted row carries source_dataset/source_id/provenance; the direct
+#     launcher then removes exact-ID/path collisions with MVBench+TempCompass.
+#   * ID/path checking cannot prove that a re-encoded copy is absent.  The
+#     experiment must therefore be reported as "known-source excluded +
+#     ID-checked", never as a universal decontamination guarantee.
+
+sources:
+  # Primary source. Dense clip captions explicitly describe content, shot type,
+  # and camera movement, so it is the best fit for temporal video-language
+  # supervision among the locally listed sources.
+  vript:
+    enabled: true
+    required: true
+    role: dense_temporal_caption
+    reader: vript
+    metadata:
+      - /data/vjuicefs_ai_gpt_vision_wl04/public_data/origin_data/open_source_data/vript/meta
+    video_root: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_traindata/vript
+    # Vript stores clip records below a top-level `data` object.  The resolver
+    # tries explicit video fields first, then these clip-ID templates, then an
+    # on-disk basename index (safe here: about 4e5 clips, not millions).
+    video_fields: [video_path, video, path, clip_path]
+    id_fields: [clip_id, video_id, id]
+    path_templates:
+      - "{clip_id}.mp4"
+      - "{video_id}/{clip_id}.mp4"
+    index_fallback: true
+    caption_fields: [caption.content, content, caption, description]
+    caption_context_fields: [caption.shot_type, caption.camera_movement, caption.scene_title]
+    question: "Describe the actions, scene, and any relevant camera movement in this video."
+    max_answer_chars: 720
+    max_samples: 260000
+    min_samples: 220000
+
+  # Secondary source, deliberately disabled until the direct audit proves that
+  # the mounted copy contains resolvable local video paths.  Its 10M metadata
+  # contains video ID, timestamp, generated caption, and similarity score; do
+  # not build a 7M-file basename index for it.
+  internvid:
+    enabled: false
+    required: false
+    role: broad_video_caption
+    reader: generic
+    metadata:
+      - /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_data/InternVid/InternVid_caption.jsonl.time_quant_0p5.jsonl
+    video_root: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_data/vd-foundation___InternVid-10M-FLT
+    video_fields: [video_path, video, path, filepath]
+    id_fields: [video_id, videoID, YoutubeID, youtube_id, id]
+    caption_fields: [caption, text, description]
+    start_fields: [start, start_time, start_timestamp]
+    end_fields: [end, end_time, end_timestamp]
+    index_fallback: false
+    question: "Describe the main actions and events in this video."
+    max_answer_chars: 480
+    max_samples: 120000
+    min_samples: 90000
+
+  # Useful only as a later breadth ablation.  It has short, noisier captions
+  # and watermarks, so it is not part of the first evidence-generating run.
+  webvid10m:
+    enabled: false
+    required: false
+    role: low_priority_breadth_caption
+    reader: generic
+    metadata:
+      - /data/vjuicefs_ai_gpt_vision_wl04/public_data/origin_data/open_source_data/webvid-10M/meta/meta_split_frame
+    video_root: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_traindata/webvid-10M
+    video_fields: [video_path, video, path, filepath]
+    id_fields: [videoid, video_id, id]
+    caption_fields: [caption, name, description, text]
+    index_fallback: false
+    question: "Briefly describe this video."
+    max_answer_chars: 360
+    max_samples: 100000
+    min_samples: 75000
+
+  # Metadata is mounted, but the supplied inventory has no local video-root
+  # path.  Leave disabled rather than silently emitting nonexistent clips.
+  openvid1m:
+    enabled: false
+    required: false
+    role: high_quality_caption_pending_video_root
+    reader: generic
+    metadata:
+      - /data/vjuicefs_ai_gpt_vision_wl04/public_data/origin_data/open_source_data/OpenVid/meta/meta_split_frame
+    video_root: ""
+    video_fields: [video_path, video, path, filepath]
+    id_fields: [video, video_id, id]
+    caption_fields: [caption, description, text]
+    question: "Describe this video in detail."
+    max_answer_chars: 600
+    max_samples: 100000
+    min_samples: 75000

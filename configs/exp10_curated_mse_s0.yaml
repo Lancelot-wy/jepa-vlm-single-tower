@@ -1,0 +1,7 @@
+# EXP-10 treatment.  It differs from exp10_curated_sft_s0 only by the existing
+# JEPA/MSE settings inherited through exp9_mse.yaml.
+_base_: exp9_mse.yaml
+train:
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp10_curated/qa_train_clean.jsonl
+  min_flow: 0.0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp10_curated_mse_s0

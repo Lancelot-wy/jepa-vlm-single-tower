@@ -1,5 +1,9 @@
 # Direct EXP-09 LLaVA-only run (one 4×L40S host)
 
+> **Status: not approved as the formal mainline.** The LLaVA-only filter is
+> useful for debugging the launcher but does not establish source-level
+> decontamination. Use [CURATED_EXP10.md](CURATED_EXP10.md) for the active run.
+
 This is the direct-server replacement for Channel-bus. It does not submit a
 platform job and does not require Blue Code. The run is deliberately named
 `exp09_llavaonly_*`: without an official NExT-QA **train** split, it is a
