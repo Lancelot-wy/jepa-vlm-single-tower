@@ -33,6 +33,29 @@ This is **not** a proof against renamed, re-encoded, or cropped copies of the
 same video.  Report results as “known-source excluded and ID/path checked”, not
 as universally decontaminated.
 
+## Launch safeguards (implemented)
+
+- `max_steps` is an **optimizer-update** count. With four GPUs, batch four and
+  `GRAD_ACCUM=8`, each 4,000-step arm consumes 512,000 examples. Checkpoints
+  carry `step_unit=optimizer_update`; legacy checkpoints from before this rule
+  must not be resumed silently.
+- EXP-10 deliberately sets `val_manifest: ""`. The old inherited LLaVA-only
+  validation file was neither prepared nor source-matched and could fail at
+  step 500. It is not a valid proxy for this mixture.
+- The CE and MTP arms use deterministic per-manifest-index temporal transforms
+  for a fixed seed. This makes the paired comparison reproducible; an eventual
+  multi-epoch run needs an explicit shared epoch seed rather than OS-random
+  transforms.
+- Both the CE and MTP code paths receive a real two-update, four-GPU smoke
+  test. The MTP arm logs `mtp_persistence_mse`, `mtp_persistence_ratio`, and
+  `mtp_gain_vs_persistence`; a falling MTP loss alone is not mechanism evidence.
+- The collator reserves answer-token budget and logs answer/question truncation
+  rates. The manifest builder removes exact cross-source real-path duplicates
+  while retaining multiple native QA turns within one source/video.
+
+Read [KNOWN_ISSUES.md](KNOWN_ISSUES.md) before changing source caps, loss
+weights, temporal sampling, or the evaluation protocol.
+
 ## Direct commands
 
 Run the stages inside `tmux` so an SSH/terminal disconnect does not terminate

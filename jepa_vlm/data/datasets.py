@@ -98,7 +98,10 @@ class ManifestVideoDataset(Dataset):
 
     def __getitem__(self, i: int):
         it = self.items[i]
-        rng = np.random.default_rng(None if self.training else self.seed * 100003 + i)
+        # Keep video offset selection reproducible across paired arms.  The
+        # DataLoader shuffle order may change, but a manifest row always maps
+        # to one deterministic augmentation under a given train seed.
+        rng = np.random.default_rng(self.seed * 100003 + i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
         frames = decode_frames(
             path, self.num_frames, self.sample_fps, self.frame_sampling,
@@ -201,7 +204,9 @@ class QAVideoDataset(ManifestVideoDataset):
 
     def __getitem__(self, i: int):
         it = self.items[i]
-        rng = np.random.default_rng(None if self.training else self.seed * 100003 + i)
+        # Do not use default_rng(None) here: it draws OS entropy independently
+        # in CE and MTP arms, invalidating a same-seed paired comparison.
+        rng = np.random.default_rng(self.seed * 100003 + i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
 
         # 先选模板再解码（speed 模板需要改采样帧率：帧距 x2 = 2 倍速）
@@ -249,29 +254,46 @@ class QACollator:
     only the answer tokens. Works with the HF tokenizer (or any object exposing
     encode/eos_token_id/pad_token_id and the qwen special token ids in `cfg_ids`)."""
 
-    def __init__(self, tokenizer, cfg_ids: dict, tokens_per_clip: int, max_len: int = 256):
+    def __init__(self, tokenizer, cfg_ids: dict, tokens_per_clip: int, max_len: int = 256,
+                 max_answer_tokens: int = 96):
         self.tok = tokenizer
         self.ids = cfg_ids  # video_token_id / vision_start_token_id / vision_end_token_id
         self.tokens_per_clip = tokens_per_clip
         self.max_len = max_len
+        self.max_answer_tokens = max_answer_tokens
 
     def _encode(self, text: str) -> list[int]:
         return self.tok.encode(text, add_special_tokens=False)
 
     def __call__(self, batch: list[dict]) -> dict:
         seqs, labels = [], []
+        answer_token_counts, answer_truncated, question_truncated = [], [], []
         for b in batch:
             pre = self._encode("<|im_start|>user\n")
             vid = [self.ids["vision_start_token_id"]] + \
                   [self.ids["video_token_id"]] * self.tokens_per_clip + \
                   [self.ids["vision_end_token_id"]]
-            q = self._encode(b["question"] + "<|im_end|>\n<|im_start|>assistant\n")
-            a = self._encode(b["answer"] + "<|im_end|>")
-            ids = (pre + vid + q + a)[: self.max_len + self.tokens_per_clip]
+            q_full = self._encode(b["question"] + "<|im_end|>\n<|im_start|>assistant\n")
+            a_full = self._encode(b["answer"] + "<|im_end|>")
+
+            # The old whole-sequence truncation could leave zero supervised
+            # answer tokens when a native question was long.  Reserve a bounded
+            # answer budget first, then truncate the question if needed.
+            # Preserve the prior total-sequence ceiling: `max_len` is the text
+            # budget after accounting for the visual placeholders, not in
+            # addition to the user/vision prefix.
+            content_budget = max(self.max_len + self.tokens_per_clip - len(pre) - len(vid), 0)
+            answer_budget = min(len(a_full), self.max_answer_tokens, content_budget)
+            q_budget = max(content_budget - answer_budget, 0)
+            q = q_full[:q_budget]
+            a = a_full[: content_budget - len(q)]
+            ids = pre + vid + q + a
             lab = [-100] * (len(pre) + len(vid) + len(q)) + a
-            lab = lab[: len(ids)]
             seqs.append(ids)
             labels.append(lab)
+            answer_token_counts.append(len(a))
+            answer_truncated.append(int(len(a) < len(a_full)))
+            question_truncated.append(int(len(q) < len(q_full)))
         L = max(len(s) for s in seqs)
         pad = self.tok.pad_token_id or 0
         input_ids = torch.full((len(seqs), L), pad, dtype=torch.long)
@@ -285,4 +307,7 @@ class QACollator:
             "pixel_values": torch.stack([b["pixel_values"] for b in batch]),
             "grid_thw": batch[0]["grid_thw"],
             "input_ids": input_ids, "attention_mask": attn, "labels": lab_t,
+            "answer_token_count": torch.tensor(answer_token_counts, dtype=torch.float32),
+            "answer_truncated": torch.tensor(answer_truncated, dtype=torch.float32),
+            "question_truncated": torch.tensor(question_truncated, dtype=torch.float32),
         }

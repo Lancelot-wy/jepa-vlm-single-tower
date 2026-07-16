@@ -88,6 +88,8 @@ from jepa_vlm.config import load_config
 for name in ("exp10_curated_sft_s0", "exp10_curated_sft_s1",
              "exp10_curated_mse_s0", "exp10_curated_mse_s1"):
     c = load_config(f"configs/{name}.yaml")
+    if c.train.val_manifest:
+        raise SystemExit(f"{name}: EXP-10 must not inherit a stale validation manifest: {c.train.val_manifest}")
     print(f"{name:25s} seed={c.train.seed} lambda={c.train.lambda_reg} "
           f"mtp={c.model.mtp_enabled} min_flow={c.train.min_flow} "
           f"templates={c.train.temporal_qa_templates}")
@@ -182,17 +184,22 @@ prepare_data() {
 run_smoke() {
   load_env
   [[ -s "$CLEAN_QA" ]] || die "run 'prep' before 'smoke'"
-  local out="${OUTPUT_ROOT}/exp10_curated_smoke"
-  [[ -f "$out/step_2/state.pt" ]] && { info "smoke already passed"; return; }
-  mkdir -p "$out"
-  (
-    cd "$PROJECT"
-    CONFIG=configs/exp10_curated_sft_s0.yaml NPROC_PER_NODE=4 NNODES=1 NODE_RANK=0 \
-      MASTER_ADDR=127.0.0.1 GRAD_ACCUM="$GRAD_ACCUM" \
-      EXTRA_OVERRIDES="train.output_dir=${out} train.max_steps=2 train.save_every=2 train.eval_every=999999 train.log_every=1" \
-      bash scripts/cluster/train_multinode.sh
-  ) 2>&1 | tee -a "$out/launcher.log"
-  [[ -f "$out/step_2/state.pt" ]] || die "smoke did not produce step_2/state.pt"
+  local arm out
+  # Exercise both the CE control and the MTP treatment; testing only the
+  # control cannot catch a treatment-only regression before four GPUs are used.
+  for arm in exp10_curated_sft_s0 exp10_curated_mse_s0; do
+    out="${OUTPUT_ROOT}/exp10_curated_smoke_${arm}"
+    [[ -f "$out/step_2/state.pt" ]] && { info "$arm smoke already passed"; continue; }
+    mkdir -p "$out"
+    (
+      cd "$PROJECT"
+      CONFIG="configs/${arm}.yaml" NPROC_PER_NODE=4 NNODES=1 NODE_RANK=0 \
+        MASTER_ADDR=127.0.0.1 GRAD_ACCUM="$GRAD_ACCUM" \
+        EXTRA_OVERRIDES="train.output_dir=${out} train.max_steps=2 train.save_every=2 train.eval_every=999999 train.log_every=1" \
+        bash scripts/cluster/train_multinode.sh
+    ) 2>&1 | tee -a "$out/launcher.log"
+    [[ -f "$out/step_2/state.pt" ]] || die "$arm smoke did not produce step_2/state.pt"
+  done
 }
 
 latest_checkpoint() {
@@ -206,10 +213,27 @@ latest_checkpoint() {
   printf '%s' "$best"
 }
 
+is_update_step_checkpoint() {
+  "$PY" - "$1" <<'PY'
+import sys
+import torch
+
+state = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+raise SystemExit(0 if state.get("step_unit") == "optimizer_update" else 1)
+PY
+}
+
 run_arm() {
   local arm="$1" out="${OUTPUT_ROOT}/$1" resume=""
-  [[ -f "$out/step_4000/state.pt" ]] && { info "$arm already complete"; return; }
+  if [[ -f "$out/step_4000/state.pt" ]]; then
+    is_update_step_checkpoint "$out/step_4000/state.pt" || die "$arm has a legacy micro-batch checkpoint; use a fresh output directory"
+    info "$arm already complete"
+    return
+  fi
   if [[ -d "$out" && "${RESUME:-0}" == 1 ]]; then resume="$(latest_checkpoint "$out")"; fi
+  if [[ -n "$resume" ]]; then
+    is_update_step_checkpoint "$resume/state.pt" || die "$arm resume checkpoint is legacy micro-batch accounting; use a fresh output directory"
+  fi
   if [[ -d "$out" && -z "$resume" && -f "$out/config.json" ]]; then
     die "$arm is incomplete; restart with RESUME=1"
   fi
@@ -231,8 +255,10 @@ run_arm() {
 
 run_training() {
   load_env
-  [[ -f "${OUTPUT_ROOT}/exp10_curated_smoke/step_2/state.pt" ]] || die "run 'smoke' before 'train'"
   local arm
+  for arm in exp10_curated_sft_s0 exp10_curated_mse_s0; do
+    [[ -f "${OUTPUT_ROOT}/exp10_curated_smoke_${arm}/step_2/state.pt" ]] || die "run 'smoke' before 'train'"
+  done
   for arm in "${ARMS[@]}"; do run_arm "$arm"; done
 }
 

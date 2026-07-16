@@ -93,6 +93,32 @@ def main() -> None:
         reports[name] = stats
         print(f"{name}: {stats}")
 
+    # Preserve multiple native QA turns from one source/video, but suppress an
+    # exact physical video path appearing again under a lower-priority source.
+    # This is intentionally conservative: it cannot identify re-encodes or
+    # different mount paths that refer to the same source video.
+    kept: list[dict] = []
+    video_owner: dict[str, str] = {}
+    cross_source_exact_path_duplicates = collections.Counter()
+    for item in items:
+        canonical_video = os.path.realpath(item["video"])
+        owner = video_owner.get(canonical_video)
+        if owner is not None and owner != item["source_dataset"]:
+            cross_source_exact_path_duplicates[item["source_dataset"]] += 1
+            continue
+        video_owner.setdefault(canonical_video, item["source_dataset"])
+        kept.append(item)
+    items = kept
+    selected_sources = dict(select_sources(registry, args.sources))
+    final_counts = collections.Counter(item["source_dataset"] for item in items)
+    for name, source in selected_sources.items():
+        minimum = int(source["min_samples"])
+        if final_counts[name] < minimum:
+            raise RuntimeError(
+                f"{name}: cross-source exact-path dedup left {final_counts[name]} rows; "
+                f"need at least {minimum}. Resolve the overlap or lower the registry cap explicitly."
+            )
+
     # Fix final ordering for reproducibility while retaining uniform per-source
     # reservoir sampling.  The train DataLoader shuffles independently per seed.
     items.sort(key=lambda item: (item["source_dataset"], item["source_id"], item["video"]))
@@ -110,7 +136,8 @@ def main() -> None:
         "rows": len(items),
         "by_source": {name: sum(1 for item in items if item["source_dataset"] == name) for name in reports},
         "source_stats": reports,
-        "caveat": "Only local-path and declared-source checks are enforced here; run benchmark ID/path filtering next.",
+        "cross_source_exact_path_duplicates_dropped": dict(cross_source_exact_path_duplicates),
+        "caveat": "Exact real-path duplicates across sources are removed. Re-encoded, renamed, or separately-mounted copies are not detectable here; run benchmark ID/path filtering next.",
     }
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)

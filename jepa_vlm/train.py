@@ -43,6 +43,11 @@ def build_dataloaders(cfg: Config, tokenizer=None):
         data_root=tc.data_root, num_frames=tc.num_frames, sample_fps=tc.sample_fps,
         frame_sampling=tc.frame_sampling, frame_size=mc.frame_size,
         duplicate_frames=mc.duplicate_frames,
+        # A fixed manifest index must receive the same temporal augmentation in
+        # paired CE/MTP arms.  This is especially important for EXP-10, where
+        # otherwise each arm would draw a different shuffle/reverse/offset from
+        # OS entropy despite sharing a nominal seed.
+        seed=tc.seed,
     )
     if tc.phase == "b":
         assert tokenizer is not None, "phase b needs a tokenizer"
@@ -143,16 +148,25 @@ def main():
         train_dl.collate_fn.ids = ids
 
     optimizer = make_optimizer(model, cfg)
+
+    # Do not pass the scheduler through Accelerator.prepare().  Accelerate's
+    # distributed scheduler may advance once per process, while `max_steps` in
+    # this project is explicitly an optimizer-update count.  Keeping a plain
+    # scheduler also makes its state and the logged step unambiguous.
+    model, optimizer, train_dl = accelerator.prepare(model, optimizer, train_dl)
     sched = torch.optim.lr_scheduler.LambdaLR(
         optimizer, lambda s: lr_lambda(s, tc.warmup_steps, tc.max_steps))
-
-    model, optimizer, train_dl, sched = accelerator.prepare(model, optimizer, train_dl, sched)
     unwrapped = accelerator.unwrap_model(model)
     model_dtype = next(unwrapped.parameters()).dtype
 
     start_step = 0
     if tc.resume:
         state = torch.load(os.path.join(tc.resume, "state.pt"), map_location="cpu", weights_only=False)
+        if state.get("step_unit") != "optimizer_update":
+            raise RuntimeError(
+                "Refusing to resume a legacy checkpoint whose `step` counted micro-batches. "
+                "Start a fresh run or explicitly convert the checkpoint/scheduler state."
+            )
         unwrapped.load_state_dict(state["model"], strict=False)
         optimizer.load_state_dict(state["optimizer"])
         sched.load_state_dict(state["scheduler"])
@@ -177,6 +191,7 @@ def main():
         sd = {k: v for k, v in unwrapped.state_dict().items() if k in trainable}
         torch.save({"model": sd, "optimizer": optimizer.state_dict(),
                     "scheduler": sched.state_dict(), "step": step,
+                    "step_unit": "optimizer_update",
                     "config": cfg.to_dict()}, os.path.join(ckpt_dir, "state.pt"))
         accelerator.print(f"saved {ckpt_dir} ({len(sd)} trainable tensors)")
 
@@ -184,6 +199,7 @@ def main():
     step = start_step
     t0 = time.time()
     running: dict[str, float] = {}
+    running_count = 0
     data_iter = iter(train_dl)
     while step < tc.max_steps:
         try:
@@ -206,20 +222,33 @@ def main():
             accelerator.backward(out.loss)
             if accelerator.sync_gradients and tc.grad_clip > 0:
                 accelerator.clip_grad_norm_(unwrapped.trainable_parameters(), tc.grad_clip)
+            did_update = accelerator.sync_gradients
             optimizer.step()
-            sched.step()
+            did_update = did_update and not optimizer.step_was_skipped
+            if did_update:
+                sched.step()
             optimizer.zero_grad(set_to_none=True)
 
-        for k, v in {"loss": float(out.loss.detach()), **out.metrics}.items():
+        log_metrics = {"loss": float(out.loss.detach()), **out.metrics}
+        if tc.phase == "b":
+            log_metrics.update({
+                "answer_tokens": float(batch["answer_token_count"].float().mean()),
+                "answer_truncated_frac": float(batch["answer_truncated"].float().mean()),
+                "question_truncated_frac": float(batch["question_truncated"].float().mean()),
+            })
+        for k, v in log_metrics.items():
             running[k] = running.get(k, 0.0) + v
+        running_count += 1
+        if not did_update:
+            continue
         step += 1
 
         if step % tc.log_every == 0:
-            n = tc.log_every
+            metric_count = running_count
             rec = {"step": step, "lr": sched.get_last_lr()[0],
-                   "sec_per_step": (time.time() - t0) / n,
-                   **{k: v / n for k, v in running.items()}}
-            running, t0 = {}, time.time()
+                   "sec_per_step": (time.time() - t0) / tc.log_every,
+                   **{k: v / metric_count for k, v in running.items()}}
+            running, running_count, t0 = {}, 0, time.time()
             accelerator.print(json.dumps({k: round(v, 5) if isinstance(v, float) else v
                                           for k, v in rec.items()}))
             if accelerator.is_main_process:

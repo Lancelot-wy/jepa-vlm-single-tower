@@ -430,14 +430,20 @@ class JepaQwen3VL(nn.Module):
             loss = var_loss * mc.var_reg_weight if loss is None else loss + mc.var_reg_weight * var_loss
             var_metrics["var_loss"] = float(var_loss.detach())
 
+        monitor_metrics = self._monitors(target, token_mask)
         metrics = {
             **({"reg_loss": float(reg_loss.detach())} if reg_loss is not None else {}),
             **mtp_metrics,
             **var_metrics,
-            **self._monitors(target, token_mask),
+            **monitor_metrics,
         }
         if mtp_loss is not None:
             metrics["mtp_loss"] = float(mtp_loss.detach())
+            persistence = monitor_metrics.get("mtp_persistence_mse")
+            if persistence is not None and persistence > 0:
+                ratio = float(mtp_loss.detach()) / persistence
+                metrics["mtp_persistence_ratio"] = ratio
+                metrics["mtp_gain_vs_persistence"] = 1.0 - ratio
         return loss, reg_loss, mtp_loss, metrics
 
     @torch.no_grad()
@@ -455,6 +461,11 @@ class JepaQwen3VL(nn.Module):
         out = {"target_std": float(target.std(dim=(0, 1, 2)).mean())}
         a, b = target[:, :-1], target[:, 1:]
         out["adj_cos"] = float(F.cosine_similarity(a.reshape(-1, D), b.reshape(-1, D), dim=-1).mean())
+        # For a no-mask next-frame objective, copying the current target is the
+        # relevant trivial baseline.  Unlike copy_mse below it is available in
+        # EXP-10, where token_mask is deliberately None.
+        if T > 1:
+            out["mtp_persistence_mse"] = float(F.mse_loss(a, b))
 
         if token_mask is not None:
             frame_masked = token_mask.all(dim=-1)  # (B, T)

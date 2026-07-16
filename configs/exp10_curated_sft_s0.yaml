@@ -3,5 +3,9 @@
 _base_: exp9_sft.yaml
 train:
   text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp10_curated/qa_train_clean.jsonl
+  # Do not inherit the historical LLaVA-only visual validation path.  EXP-10
+  # has no matched held-out visual manifest yet; public paired evaluation runs
+  # after each completed arm instead.
+  val_manifest: ""
   min_flow: 0.0  # framediff is diagnostic only; 8.42 was an old LLaVA-specific cut
   output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp10_curated_sft_s0
