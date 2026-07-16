@@ -189,10 +189,19 @@ def main():
         os.makedirs(ckpt_dir, exist_ok=True)
         trainable = {n for n, p in unwrapped.named_parameters() if p.requires_grad}
         sd = {k: v for k, v in unwrapped.state_dict().items() if k in trainable}
-        torch.save({"model": sd, "optimizer": optimizer.state_dict(),
-                    "scheduler": sched.state_dict(), "step": step,
-                    "step_unit": "optimizer_update",
-                    "config": cfg.to_dict()}, os.path.join(ckpt_dir, "state.pt"))
+        state_path = os.path.join(ckpt_dir, "state.pt")
+        tmp_path = f"{state_path}.tmp"
+        # A shared JuiceFS write can be interrupted when an allocation is
+        # reclaimed. Publish a checkpoint only after its full payload flushes,
+        # so resume can safely select the newest valid state.
+        with open(tmp_path, "wb") as f:
+            torch.save({"model": sd, "optimizer": optimizer.state_dict(),
+                        "scheduler": sched.state_dict(), "step": step,
+                        "step_unit": "optimizer_update",
+                        "config": cfg.to_dict()}, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, state_path)
         accelerator.print(f"saved {ckpt_dir} ({len(sd)} trainable tensors)")
 
     model.train()

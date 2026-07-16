@@ -27,6 +27,9 @@ REGISTRY="${REGISTRY:-configs/data_sources_exp10.yaml}"
 MIN_RAW_QA="${MIN_RAW_QA:-460000}"
 MIN_TRAIN_QA="${MIN_TRAIN_QA:-440000}"
 GRAD_ACCUM="${GRAD_ACCUM:-8}"
+# A preempted vivolm allocation must not discard hours of work. This applies
+# to both the 128-GPU grouped launcher and the 16-GPU fallback.
+SAVE_EVERY="${EXP10_SAVE_EVERY:-250}"
 
 RAW_DIR="${DATA_ROOT}/raw"
 RAW_QA="${RAW_DIR}/qa_train.jsonl"
@@ -70,6 +73,7 @@ source_args() {
 
 preflight() {
   load_env
+  [[ "$SAVE_EVERY" =~ ^[1-9][0-9]*$ ]] || die "EXP10_SAVE_EVERY must be a positive integer"
   require_path dir "$MODEL_ROOT"
   require_path file "$MVB"
   require_path file "$TC"
@@ -95,7 +99,10 @@ for name in ("exp10_curated_sft_s0", "exp10_curated_sft_s1",
           f"templates={c.train.temporal_qa_templates}")
 PY
   )
-  info "preflight passed: 4 GPUs; effective batch=4 GPUs * batch 4 * accum ${GRAD_ACCUM} = $((4 * 4 * GRAD_ACCUM))"
+  # The normal launcher is one 4-GPU Worker, while the scaled platform entry
+  # forwards a group-local NNODES value.  Report the actual DDP world here so
+  # a 32-GPU arm is not misleadingly logged as a 16-sample update.
+  info "preflight passed: ${NPROC_PER_NODE} GPUs/node * ${NNODES} nodes * batch 4 * accum ${GRAD_ACCUM} = $((NPROC_PER_NODE * NNODES * 4 * GRAD_ACCUM)) samples/update; atomic checkpoint every ${SAVE_EVERY} updates"
 }
 
 audit_sources() {
@@ -212,6 +219,9 @@ latest_checkpoint() {
     [[ -f "$candidate/state.pt" ]] || continue
     step="${candidate##*_}"
     [[ "$step" =~ ^[0-9]+$ ]] || continue
+    # A reclaimed allocation can interrupt a shared-filesystem write. Ignore a
+    # partial or old-format state and choose the newest durable update state.
+    is_update_step_checkpoint "$candidate/state.pt" >/dev/null 2>&1 || continue
     (( step > best_step )) && { best_step="$step"; best="$candidate"; }
   done
   printf '%s' "$best"
@@ -229,6 +239,11 @@ PY
 
 run_arm() {
   local arm="$1" out="${OUTPUT_ROOT}/$1" resume=""
+  local launch_nproc="${TRAIN_NPROC_PER_NODE:-4}"
+  local launch_nnodes="${TRAIN_NNODES:-1}"
+  local launch_node_rank="${TRAIN_NODE_RANK:-0}"
+  local launch_master="${TRAIN_MASTER_ADDR:-127.0.0.1}"
+  local launch_log="${out}/launcher_rank${launch_node_rank}.log"
   if [[ -f "$out/step_4000/state.pt" ]]; then
     is_update_step_checkpoint "$out/step_4000/state.pt" || die "$arm has a legacy micro-batch checkpoint; use a fresh output directory"
     info "$arm already complete"
@@ -245,8 +260,9 @@ run_arm() {
   # Always pass the output directory explicitly.  The platform parallel
   # launcher assigns every submission its own run root, while the four arm
   # names remain stable beneath it.
-  local overrides="train.output_dir=${out}"
+  local overrides="train.output_dir=${out} train.save_every=${SAVE_EVERY}"
   [[ -n "$resume" ]] && overrides+=" train.resume=${resume}"
+  [[ -n "${TRAIN_EXTRA_OVERRIDES:-}" ]] && overrides+=" ${TRAIN_EXTRA_OVERRIDES}"
   if [[ -n "$resume" ]]; then
     info "$arm: resuming from $resume"
   else
@@ -254,9 +270,10 @@ run_arm() {
   fi
   (
     cd "$PROJECT"
-    CONFIG="configs/${arm}.yaml" NPROC_PER_NODE=4 NNODES=1 NODE_RANK=0 MASTER_ADDR=127.0.0.1 \
+    CONFIG="configs/${arm}.yaml" NPROC_PER_NODE="$launch_nproc" NNODES="$launch_nnodes" \
+      NODE_RANK="$launch_node_rank" MASTER_ADDR="$launch_master" \
       GRAD_ACCUM="$GRAD_ACCUM" EXTRA_OVERRIDES="$overrides" bash scripts/cluster/train_multinode.sh
-  ) 2>&1 | tee -a "$out/launcher.log"
+  ) 2>&1 | tee -a "$launch_log"
   [[ -f "$out/step_4000/state.pt" ]] || die "$arm did not reach step_4000"
 }
 

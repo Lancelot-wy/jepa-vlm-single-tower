@@ -1,0 +1,37 @@
+# Fast EXP-10 job: four independent 8-node DDP groups, one group per arm.
+#
+# Resources: 32 Workers x 4 L40S = 128 GPUs.  Each arm uses 8 nodes / 32 GPUs
+# with batch_size=4 and GRAD_ACCUM=1, preserving the baseline effective batch:
+#   4 samples/GPU * 32 GPUs * 1 accumulation = 128 samples/update.
+#
+# The entrypoint runs data gates and smoke first, trains the four arms in
+# parallel, runs the integrated evaluation, then exits. restartPolicy: Never
+# lets vivolm release all Worker pods once evaluation completes.
+
+type: jexp10-scale128
+business: VideoFoundationModel1b-wl01
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+tmpfs: true
+restartPolicy: Never
+
+run:
+  rdma: 'ib'
+  command: "EXP10_RUN_ID=unset EXP10_ATTEMPT_ID=unset EXP10_RESUME=0 EXP10_NODES_PER_ARM=8 EXP10_GRAD_ACCUM=1 EXP10_NUM_WORKERS=2 EXP10_SAVE_EVERY=250 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp10_scale_entry.sh"
+
+spec:
+  Worker:
+    num: 32
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

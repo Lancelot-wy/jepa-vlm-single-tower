@@ -7,15 +7,17 @@
 
 | 阶段 | 谁执行 | 固化实现 | 产物 / 成功条件 |
 |---|---|---|---|
-| 代码同步与提交 | 开发机上的 Cloud | `scripts/cluster/submit_exp10.sh` | vivolm job ID；脚本打印 run-id。 |
+| 代码同步与提交 | 开发机上的 Cloud | `scripts/cluster/submit_exp10_scale.sh` | vivolm job ID；脚本打印 run-id。 |
 | 公共数据 gate | rank 0（4 卡） | `run_exp10_curated_4gpu.sh preflight/prep/smoke` | `source_audit.json`、clean manifest、两个 smoke `step_2/state.pt`。 |
-| 四臂训练 | 4 个 Pod，各 4 L40S | `job_exp10_entry.sh` + `ONLY_ARM` | 每臂各有 `step_4000/state.pt`。 |
+| 四臂训练 | 32 个 Pod，每个 4 L40S | `job_exp10_scale_entry.sh` + 分组 `ONLY_ARM` | 每臂各有 `step_4000/state.pt`。 |
 | 评测 | rank 0 的 4 卡 | `run_exp10_curated_4gpu.sh eval` | 四臂 MVBench/TempCompass JSON 与 `scorecard.json`。 |
 
-资源请求固定为 **4 Worker × 4 L40S = 16 GPU**，每个 Pod 120 CPU、990Gi 内存。
-四个臂不是 16 卡 DDP：每台只跑一臂的 4 卡 DDP，所以有效 batch、学习率、4,000
-optimizer-update 步数均与原始配对设计相同。rank 0 先写共享 manifest，其他三台等
-`gates_ready`，因此不会发生并发数据构建。
+资源请求固定为 **32 Worker × 4 L40S = 128 GPU**，每个 Pod 120 CPU、990Gi 内存。
+四个臂不是 128 卡 DDP：平台 Worker 被切成四个独立的 8 节点 / 32 卡组，每臂使用
+per-GPU batch=4、`GRAD_ACCUM=1`，因此有效 batch=128、学习率、4,000 optimizer-update
+步数均与原始配对设计相同。rank 0 先写共享 manifest，其他 Worker 等 `gates_ready`，
+因此不会发生并发数据构建。评测在同一 job 内自动执行，结束后任务退出，平台自动释放
+128 卡。
 
 处理后路径、conversation 字段及 caption/grounding 语义见
 [UNIFIED_VIDEO_DATA.md](UNIFIED_VIDEO_DATA.md)。Cloud 不得把 registry 改回旧版原始
@@ -47,11 +49,11 @@ fi
 
 git status -sb                  # 必须干净；submit 脚本也会强制检查
 git rev-parse --short HEAD
-bash scripts/cluster/submit_exp10.sh --dry-run
-bash scripts/cluster/submit_exp10.sh
+bash scripts/cluster/submit_exp10_scale.sh --dry-run
+bash scripts/cluster/submit_exp10_scale.sh
 ```
 
-提交脚本会打印类似 `run_id=exp10-...`。保存这个值，然后用平台界面查看 job ID/排队状态，
+提交脚本会打印类似 `run_id=exp10-scale-...`。保存这个值，然后用平台界面查看 job ID/排队状态，
 并用共享盘做只读检查：
 
 ```bash
@@ -89,18 +91,18 @@ bash scripts/cluster/inspect_exp10_run.sh <run-id>
 | `scripts/cluster/submit_batch.sh` | 旧 `cl_*`、EXP-09 / V4 批量消融 | 禁用；它按旧 config 生成 job。 |
 | `scripts/direct/run_exp09_llavaonly_4gpu.sh` | LLaVA-only EXP-09 | 禁用；EXP-09 已暂停。 |
 | `submit_mcq_eval.sh` / `submit_qa_eval.sh` / `submit_probes.sh` | r2/r3 历史评测 | 禁用；EXP-10 评测已在新的平台 job 中自动完成。 |
-| `scripts/direct/run_exp10_curated_4gpu.sh` | 当前数据 gate、单臂训练、评测核心 | 只能由 `job_exp10_entry.sh` 编排，或在单一 4 卡机器上按 `CURATED_EXP10.md` 直接运行。 |
+| `scripts/direct/run_exp10_curated_4gpu.sh` | 当前数据 gate、单臂训练、评测核心 | 由 `job_exp10_scale_entry.sh` 编排；它会把 group-local 8 节点拓扑转交给 `torchrun`。 |
 
 ## 常见问题与正确处置
 
 | 现象 / 证据 | 原因 | Cloud 应做什么 |
 |---|---|---|
-| `expected exactly 4 visible GPUs` | Pod 规格不对或调度未给满卡 | 不改 batch；检查 `job_exp10.yaml` 为 `num: 4`、每 Worker `gpu: "4"`，重新提交。 |
-| `platform reported NNODES != 4` | job YAML 被改成了不一致的 Worker 数 | 不要尝试多节点 torchrun；恢复正式 YAML，重新提交。 |
+| `expected exactly 4 visible GPUs` | Pod 规格不对或调度未给满卡 | 不改 batch；检查 `job_exp10_scale.yaml` 为 `num: 32`、每 Worker `gpu: "4"`，重新提交。 |
+| `platform reported NNODES != 32` | job YAML 被改成了不一致的 Worker 数 | 不要尝试手改多节点拓扑；恢复正式 YAML，重新提交。 |
 | 源审计 `ready=false` 或 `missing_video` 高 | 某挂载/metadata/视频解析路径不可用 | 报告 `source_audit.json` 和对应路径；不能降低 `min_samples` 或移除审计。 |
 | clean manifest 小于 gate | 本地可解析样本不足或污染过滤过多 | 保存 `qa_train.jsonl.report.json`、污染检查输出；不要修改阈值后强开。 |
 | 三台机器长期等 `gates_ready` | rank 0 在准备中，或 rank 0 已失败 | 先读 rank 0 log；`inspect_exp10_run.sh` 有 `failed_rank_0` 时停止并报告。 |
-| 某 arm 有 partial checkpoint | 抢占、节点异常或训练故障 | 先检查 log；只有 `state.pt` 写明 `step_unit: optimizer_update` 且非 NaN/数据失败时，使用 `--resume --run-id <id>`。 |
+| 某 arm 有 partial checkpoint | 抢占、节点异常或训练故障 | 每 250 update 已原子写 checkpoint；先检查 log。若不是数据/NaN 故障，使用 `submit_exp10_scale.sh --resume --run-id <id>`；启动器会跳过中断写入的不完整 state。 |
 | `legacy micro-batch checkpoint` | 旧版计步 checkpoint 不能和当前 4,000 update 协议混用 | 不恢复；新建 run-id 重新跑。 |
 | `HF_HUB_OFFLINE` / 权重下载报错 | GPU Pod 默认离线 | 不在 Pod 下载或 pip install；确认共享模型和 `envs/jepa311` 存在。 |
 | CUDA OOM / NCCL 异常 | Pod 未按 4 卡独立运行或环境冲突 | 保存完整 rank log；不要擅自改 batch、grad accumulation、LR 或卡数。 |
@@ -115,3 +117,7 @@ bash scripts/cluster/inspect_exp10_run.sh <run-id>
 
 Cloud 不得修改数据源白名单、去污染 gate、`max_steps`、loss 权重、每臂 GPU 数、学习率，
 也不得从历史 EXP-09/NExT-QA 文档拼接命令。需要改实验设计时先停在报告阶段。
+
+若队列在合理时间内不能同时调度 32 个 Worker，才改用 `submit_exp10.sh` 的 16 卡回退。
+不要缩小 `job_exp10_scale.yaml` 的 Worker 数；其入口会拒绝不满足四个完整 DDP 组的拓扑。
+完整的 128 卡生命周期、自动释放和首批 ETA 判定见 [SCALE_EXP10.md](SCALE_EXP10.md)。

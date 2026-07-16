@@ -8,13 +8,17 @@ Phase-A / EXP-09 记录，**不能**用于当前实验。
 
 | 工作 | vivolm 资源 | 原因 |
 |---|---:|---|
-| 数据审计、manifest 构建、两臂 smoke | rank 0 的 **1 Worker × 4 L40S** | 这是共享数据的唯一写入者，避免四台机器并发修改 manifest。 |
-| 四个训练臂 | **4 Workers × 每台 4 L40S（共 16 卡）** | 每台机器独立 4 卡 DDP 跑一个 arm；有效 batch、LR、步数均不变。 |
+| 数据审计、manifest 构建、两臂 smoke | rank 0 的 **1 Worker × 4 L40S** | 这是共享数据的唯一写入者，避免并发修改 manifest。 |
+| 四个训练臂（首选） | **32 Workers × 每台 4 L40S（共 128 卡）** | 四个独立 8 节点 / 32 卡 DDP 组；每臂仍为有效 batch 128、原 LR、4,000 update。 |
+| 四个训练臂（排队回退） | **4 Workers × 每台 4 L40S（共 16 卡）** | 每台独立 4 卡 DDP 跑一个 arm；只在无法一次调度 32 Worker 时使用。 |
 | 四臂最终 MVBench + TempCompass 评测 | rank 0 的同一 4 L40S | 四臂 checkpoint 到齐后，四张卡各评一个 arm。 |
 
-所以当前最快且不改变实验设计的配置是四台 4×L40S Pod（总共 16 卡、480 CPU、3960Gi
-内存请求）。作业里复用了已验证的 `VideoFoundationModel1b-wl01` business 和 L40S
-镜像。它不会把四臂拼成 16 卡 DDP；每臂保持原来的 4 卡条件，因而配对结论仍可比。
+队列有容量时，当前首选是 32 台 4×L40S Pod（总共 128 卡）。`job_exp10_scale.yaml`
+按 Worker 顺序切为四个独立 8 节点 DDP 组，绝不会把四臂拼成一个 128 卡 DDP；每臂
+使用 `batch_size=4`、`GRAD_ACCUM=1`，所以有效 batch 仍是 `4×32×1=128`，配对结论
+可比。完成训练后同一 job 自动评测，然后 entrypoint 退出、vivolm 按
+`restartPolicy: Never` 回收全部机器。具体拓扑、时间判定和恢复规则见
+[SCALE_EXP10.md](SCALE_EXP10.md)。
 
 平台挂载已固定为以下三项，缺任意一项会在 GPU 训练前失败：
 
@@ -49,12 +53,13 @@ fi
 
 git status -sb
 git rev-parse --short HEAD
-bash scripts/cluster/submit_exp10.sh --dry-run
-bash scripts/cluster/submit_exp10.sh
+bash scripts/cluster/submit_exp10_scale.sh --dry-run
+bash scripts/cluster/submit_exp10_scale.sh
 ```
 
-最后一条提交 `job_exp10.yaml`。rank 0 按固定顺序执行
-`preflight → audit → prep → smoke`，随后四个 Pod 各训练一个 arm，最后 rank 0 评测。
+最后一条提交 `job_exp10_scale.yaml`。rank 0 按固定顺序执行
+`preflight → audit → prep → smoke`，随后四个 32 卡组各训练一个 arm，最后 rank 0
+自动评测并退出以释放机器。
 每个 submission 使用独立的 run ID 和输出根目录；任一数据源不可解析、去污染后样本
 不足、CE/MTP smoke 未生成 checkpoint，都会直接失败，绝不会静默进入正式训练。
 
@@ -72,7 +77,7 @@ bash scripts/cluster/submit_exp10.sh
 
 ```bash
 cd /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower
-bash scripts/cluster/submit_exp10.sh --resume --run-id <the-existing-run-id>
+bash scripts/cluster/submit_exp10_scale.sh --resume --run-id <the-existing-run-id>
 ```
 
 恢复仍会跑 preflight、审计、manifest gate 和 smoke；它不会跳过关键检查。旧版
