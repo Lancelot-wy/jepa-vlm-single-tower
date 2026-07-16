@@ -238,8 +238,11 @@ run_arm() {
     die "$arm is incomplete; restart with RESUME=1"
   fi
   mkdir -p "$out"
-  local overrides=""
-  [[ -n "$resume" ]] && overrides="train.resume=${resume}"
+  # Always pass the output directory explicitly.  The platform parallel
+  # launcher assigns every submission its own run root, while the four arm
+  # names remain stable beneath it.
+  local overrides="train.output_dir=${out}"
+  [[ -n "$resume" ]] && overrides+=" train.resume=${resume}"
   if [[ -n "$resume" ]]; then
     info "$arm: resuming from $resume"
   else
@@ -259,6 +262,12 @@ run_training() {
   for arm in exp10_curated_sft_s0 exp10_curated_mse_s0; do
     [[ -f "${OUTPUT_ROOT}/exp10_curated_smoke_${arm}/step_2/state.pt" ]] || die "run 'smoke' before 'train'"
   done
+  if [[ -n "${ONLY_ARM:-}" ]]; then
+    for arm in "${ARMS[@]}"; do
+      [[ "$arm" == "$ONLY_ARM" ]] && { run_arm "$arm"; return; }
+    done
+    die "ONLY_ARM is not an EXP-10 arm: ${ONLY_ARM}"
+  fi
   for arm in "${ARMS[@]}"; do run_arm "$arm"; done
 }
 

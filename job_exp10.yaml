@@ -1,0 +1,52 @@
+# Canonical vivolm job for EXP-10, the source-audited CE vs CE+MTP comparison.
+#
+# This is deliberately separate from job.yaml.  job.yaml is the historical
+# multi-node Phase-A/LLaVA launcher and must not be used for EXP-10.
+#
+# Submit from a development machine after pulling this repository to the shared
+# JuiceFS deployment path:
+#   bash scripts/cluster/submit_exp10.sh
+#
+# Four Worker pods expose four L40S GPUs each.  They run the four paired arms
+# independently (one arm per pod) after rank 0 has passed shared data gates.
+# This preserves the exact per-arm 4-GPU effective batch while cutting the
+# training wall time from four sequential arms to roughly one arm.
+
+type: jexp10-curated
+business: VideoFoundationModel1b-wl01
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+
+# Required by configs/data_sources_exp10.yaml:
+# - sz_ocr: deployment, env, model, outputs, Vript/InternVid videos, eval JSONL
+# - ai_ocr: LLaVA-Video media and metadata
+# - ai_gpt_vision_wl04: Vript and OpenVid metadata
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+
+tmpfs: true
+restartPolicy: Never
+
+run:
+  rdma: 'ib'
+  # All platform workers execute the same entrypoint.  Rank 0 performs
+  # preflight -> source audit -> manifest/decontamination gate -> two-arm
+  # smoke; all ranks then train one assigned arm in parallel; rank 0 evaluates.
+  # EXP10_RESUME stays 0 for a new run; submit_exp10.sh --resume changes it to 1
+  # only after a preempted run has been inspected.
+  command: "EXP10_RUN_ID=unset EXP10_ATTEMPT_ID=unset EXP10_RESUME=0 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp10_entry.sh"
+
+spec:
+  Worker:
+    num: 4
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

@@ -5,6 +5,13 @@ that are implemented in the repository from open research risks.  A successful
 launch only proves the first category; it must not be used to claim that the
 second category is solved.
 
+For a vivolm platform submission, use [VIVOLM_EXP10.md](VIVOLM_EXP10.md) and
+`scripts/cluster/submit_exp10.sh`; the historical multi-node `job.yaml` is not
+an EXP-10 launcher.
+
+The execution and troubleshooting handoff for the server-side Cloud is
+[CLOUD_EXP10_RUNBOOK.md](CLOUD_EXP10_RUNBOOK.md).
+
 ## Implemented safeguards
 
 | Item | Status | Verification on the server |

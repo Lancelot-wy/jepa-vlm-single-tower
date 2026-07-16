@@ -56,6 +56,10 @@ as universally decontaminated.
 Read [KNOWN_ISSUES.md](KNOWN_ISSUES.md) before changing source caps, loss
 weights, temporal sampling, or the evaluation protocol.
 
+For the canonical vivolm queue submission (four Workers × four L40S GPUs; one
+arm per Worker), read [VIVOLM_EXP10.md](VIVOLM_EXP10.md).  Do not submit this
+experiment through the historical `job.yaml` or `scripts/cluster/submit_batch.sh`.
+
 ## Direct commands
 
 Run the stages inside `tmux` so an SSH/terminal disconnect does not terminate

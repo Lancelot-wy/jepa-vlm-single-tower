@@ -20,7 +20,7 @@ unset LD_LIBRARY_PATH
 
 # ---- model / outputs (also referenced by configs/vivolm_ssv2.yaml) ----
 export QWEN3_VL_MODEL_PATH="${CLUSTER_BASE}/models/Qwen3-VL-2B-Instruct"
-export OUTPUT_ROOT="${CLUSTER_BASE}/outputs"
+export OUTPUT_ROOT="${OUTPUT_ROOT:-${CLUSTER_BASE}/outputs}"
 
 # ---- distributed launch knobs ----
 export NPROC_PER_NODE="${NPROC_PER_NODE:-$(nvidia-smi -L 2>/dev/null | grep -c GPU || echo 4)}"
