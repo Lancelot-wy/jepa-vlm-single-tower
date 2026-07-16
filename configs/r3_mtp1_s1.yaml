@@ -1,5 +1,0 @@
-# r3_mtp1 第二种子。种子纪律(REGISTRY): 单种子结论无效, 对照臂换 seed 曾自涨 3.1pp。
-_base_: r3_mtp1.yaml
-train:
-  seed: 1
-  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_mtp1_s1

@@ -1,0 +1,13 @@
+# r3_mse: 纯看"帧预测 MSE"的收益。total = CE + 0.2 * MSE, 无任何 mask。
+# MSE = MLP(LLM 末层在第 t 帧位置的 hidden)  vs  LayerNorm(ViT 对第 t+1 帧的池化特征).detach()
+# 注: 这个 loss 在代码里的实现名叫 MTP(multi-token prediction), mtp_k=1 即"预测下一帧",
+#     下面的 mtp_* 键指的就是它, 不是额外组件。
+# 对照 = r3_sft(纯 CE, 已训完): 同数据同步数同超参, 唯一差异 = 这个 MSE。
+_base_: r3_sft.yaml
+model:
+  reg_enabled: false     # 关掉同帧回归头, 只留帧预测 MSE
+  mtp_enabled: true
+  mtp_k: 1
+train:
+  lambda_reg: 0.2        # MSE 权重 (r3_sft 是 0)
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_mse

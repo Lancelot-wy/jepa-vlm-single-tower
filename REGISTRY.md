@@ -11,7 +11,7 @@
 | EXP-05 | V4 流式线 | 8B-LoRA，11 臂（S1/S2/双CE消融/双种子），OVO+StreamingBench | **关闭（预注册负结果）** | S2 净负；S1 未确立；dvce25 显著更差（正则假说否定）；种子噪声 ±3.1pp | results/v4_streaming_eval + V4_VERDICT.md |
 | EXP-06 | vlm-jepa 评测锚定 | VLMEvalKit base 锚定 + 5 模型 × MVBench/TempCompass | 开放 | — | vlm-jepa 仓库 VLMEVALKIT.md |
 | EXP-07 | mtp1 补种子（8B） | V4 判读唯一保留项（四表全正、幅度不足） | 待定（低优先级，仅闲置算力） | — | V4_VERDICT.md 第 3 条 |
-| EXP-08 | 无 mask 纯 MSE 收益（2B） | r3_mtp1 vs r3_sft，2×2 种子，MVBench/TempCompass 配对 | **开放（当前主线）** | — | EXECUTE_NOW.md |
+| EXP-08 | 无 mask 纯 MSE 收益（2B） | r3_mse vs r3_sft，2×2 种子，MVBench/TempCompass 配对 | **开放（当前主线）** | — | EXECUTE_NOW.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 

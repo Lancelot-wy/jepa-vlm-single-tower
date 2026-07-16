@@ -19,8 +19,8 @@ total  = CE + 0.2 * MSE      (逐 token 对齐, t = 1..T-1)
 |---|---|---|---|
 | r3_sft | 纯 CE | 0 | **已训完**（outputs/r3_sft），勿重跑 |
 | r3_sft_s1 | 纯 CE | 1 | 待训 |
-| r3_mtp1 | CE + 0.2·MSE | 0 | 待训 |
-| r3_mtp1_s1 | CE + 0.2·MSE | 1 | 待训 |
+| r3_mse | CE + 0.2·MSE | 0 | 待训 |
+| r3_mse_s1 | CE + 0.2·MSE | 1 | 待训 |
 
 ## 0. 前置检查
 
@@ -29,7 +29,7 @@ cd /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower && git pu
 # (a) 配置自检 —— 预期: mtp 臂 reg=False mtp_k=1 lambda=0.2 无mask(v1); sft 臂 lambda=0
 python3 - <<'EOF'
 from jepa_vlm.config import load_config
-for n in ("r3_mtp1", "r3_mtp1_s1", "r3_sft_s1"):
+for n in ("r3_mse", "r3_mse_s1", "r3_sft_s1"):
     c = load_config(f"configs/{n}.yaml")
     print(n, "| mask:", c.model.mask_variant, "| reg:", c.model.reg_enabled,
           "| mtp:", c.model.mtp_enabled, c.model.mtp_k, "| lambda:", c.train.lambda_reg,
@@ -45,7 +45,7 @@ ls /data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/
 
 ```bash
 NODES=2 EXTRA_OVERRIDES='train.min_flow=8.42' \
-  scripts/cluster/submit_batch.sh r3_mtp1 r3_mtp1_s1 r3_sft_s1
+  scripts/cluster/submit_batch.sh r3_mse r3_mse_s1 r3_sft_s1
 ```
 
 监控 `outputs/<exp>/log.jsonl`：mtp 臂会多出 `mtp_loss_k1` 字段（预期从 ~1.3 起步下降）；
@@ -59,7 +59,7 @@ TC=<第0步的 TempCompass jsonl>
 OUT=/data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs
 mkdir -p results/exp08
 
-for E in r3_mtp1 r3_mtp1_s1 r3_sft_s1; do
+for E in r3_mse r3_mse_s1 r3_sft_s1; do
   python -m jepa_vlm.probes.mcq_eval --config $OUT/$E/config.json --ckpt $OUT/$E/step_4000 \
       --data $MVB --task MVBench     --output results/exp08/${E}_mvbench.json
   python -m jepa_vlm.probes.mcq_eval --config $OUT/$E/config.json --ckpt $OUT/$E/step_4000 \
@@ -73,7 +73,7 @@ for T in "MVBench $MVB" "Tempcompass $TC"; do set -- $T
 done
 
 # 可选第三读数: held-out 时序 QA（与 Round-3 同 manifest 同 seed）
-for E in r3_mtp1 r3_mtp1_s1 r3_sft_s1; do
+for E in r3_mse r3_mse_s1 r3_sft_s1; do
   python -m jepa_vlm.probes.temporal_qa_eval --config $OUT/$E/config.json \
       --ckpt $OUT/$E/step_4000 \
       --manifest /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/llava_video/val.jsonl \
