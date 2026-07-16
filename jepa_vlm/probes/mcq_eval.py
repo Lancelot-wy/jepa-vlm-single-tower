@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import collections
 import json
+import os
 import re
 
 import numpy as np
@@ -91,6 +92,7 @@ def main():
     ap.add_argument("--task", required=True, help="任务类别, e.g. MVBench or Tempcompass")
     ap.add_argument("--max-clips", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--output", default="", help="write per-sample records json (paired tests)")
     args = ap.parse_args()
 
     cfg, model = load_run(args.config, args.ckpt or None)
@@ -115,6 +117,7 @@ def main():
     print(f"{args.task}: {len(items)} items")
 
     stats = collections.defaultdict(lambda: [0, 0])  # subcat -> [correct, total]
+    records = []  # per-sample, for paired significance tests across arms
     n_parsed = n_skip = 0
     for i, it in enumerate(items):
         question = it.get("问题", "")
@@ -159,6 +162,8 @@ def main():
         sub = it.get("子类别", "?")
         stats[sub][1] += 1
         stats[sub][0] += int(pred == tgt)
+        records.append({"idx": i, "pred": pred, "gold": tgt, "sub_type": sub,
+                        "ok": int(pred == tgt)})
         if (i + 1) % 100 == 0:
             done = sum(v[1] for v in stats.values())
             corr = sum(v[0] for v in stats.values())
@@ -173,6 +178,14 @@ def main():
     for sub in sorted(stats):
         c, t = stats[sub]
         print(f"  {sub:28s} {c}/{t} = {100 * c / t:.2f}%")
+
+    if args.output:
+        os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+        with open(args.output, "w") as f:
+            json.dump({"task": args.task, "acc": correct / max(total, 1),
+                       "correct": correct, "total": total,
+                       "skipped": n_skip, "results": records}, f, ensure_ascii=False)
+        print(f"per-sample records -> {args.output}")
 
 
 if __name__ == "__main__":

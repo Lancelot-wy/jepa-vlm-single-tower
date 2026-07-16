@@ -1,0 +1,5 @@
+# r3_sft(纯 CE 对照) 第二种子, 与 r3_mtp1_s1 配对; s0 已训完无需重跑。
+_base_: r3_sft.yaml
+train:
+  seed: 1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_sft_s1
