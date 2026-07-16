@@ -35,10 +35,37 @@ MEDIA_TOKENS = ("<image>", "<video>", "<|video_pad|>", "<|image_pad|>", "<|visio
 def iter_records(root: str, subsets: list[str]):
     jsonl_dir = os.path.join(root, "jsonl")
     files = sorted(glob.glob(os.path.join(jsonl_dir, "final_*_processed*.jsonl")))
+    # The shared copy is also distributed as one directory per subset rather
+    # than a single <root>/jsonl directory. Support both layouts.
+    if not files:
+        files = sorted(glob.glob(
+            os.path.join(root, "**", "final_*_processed*.jsonl"),
+            recursive=True,
+        ))
     if subsets:
-        files = [f for f in files if any(s in os.path.basename(f) for s in subsets)]
+        files = [f for f in files if any(
+            s in os.path.basename(f) or s in os.path.relpath(f, root)
+            for s in subsets
+        )]
     if not files:
         raise FileNotFoundError(f"no matching jsonl in {jsonl_dir} for subsets={subsets}")
+
+    def resolve_video_path(vp: str) -> str:
+        """Resolve paths embedded in a source copy from another machine."""
+        if os.path.exists(vp):
+            return vp
+        marker = "LLaVA-Video-178K"
+        if marker in vp:
+            suffix = vp.split(marker, 1)[1].lstrip(os.sep)
+            candidate = os.path.join(root, suffix)
+            if os.path.exists(candidate):
+                return candidate
+        if not os.path.isabs(vp):
+            candidate = os.path.join(root, vp)
+            if os.path.exists(candidate):
+                return candidate
+        return vp
+
     for fp in files:
         with open(fp) as f:
             for line in f:
@@ -51,7 +78,7 @@ def iter_records(root: str, subsets: list[str]):
                     continue
                 vp = d.get("video_path") or d.get("video")
                 if vp:
-                    yield vp, d
+                    yield resolve_video_path(vp), d
 
 
 def extract_qa(rec: dict, max_pairs: int = 2) -> list[tuple[str, str]]:
