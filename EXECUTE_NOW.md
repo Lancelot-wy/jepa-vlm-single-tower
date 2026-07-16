@@ -70,7 +70,7 @@ head -2 <NExTQA meta 的 train.csv>    # 核对表头: video,question,answer,a0.
 ## 1. 数据构建
 
 ```bash
-DATA=/data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data
+export DATA=/data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data
 mkdir -p $DATA/exp09
 # (a) 178K 多子集 QA
 python scripts/prepare_llava_video.py \
