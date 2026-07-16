@@ -1,0 +1,12 @@
+# r3_mtp1: 无 mask、纯 MSE(帧间预测) 收益检验 —— 与 r3_sft(纯 CE) 唯一差异 = 加了这个 loss。
+# MSE 定义: MLP(LLM 末层在第 t 帧位置的 hidden) vs LayerNorm(ViT 对第 t+1 帧的池化特征).detach()
+# 逐 token 对齐, t=1..T-1; total = CE + 0.2 * MSE。输入全程干净(v1, 无 [M])。
+# 同数据(qa_train_flow)、同 4000 步、同超参, 继承 r3_sft。8B 上的同形态(v4_mtp1)是唯一四表全正的臂。
+_base_: r3_sft.yaml
+model:
+  reg_enabled: false     # 关同帧回归头, 只留帧间预测
+  mtp_enabled: true
+  mtp_k: 1
+train:
+  lambda_reg: 0.2        # r3_sft 是 0; 这里给 MSE 权重
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/r3_mtp1
