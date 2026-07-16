@@ -14,8 +14,8 @@ import json
 import os
 import random
 
-from data_sources import (VideoResolver, caption_for, iter_source_records, load_registry,
-                          optional_number, select_sources, source_id_for)
+from data_sources import (VideoResolver, iter_source_records, load_registry, optional_number,
+                          qa_examples_for, select_sources, source_id_for)
 
 
 def build_source(name: str, source: dict, seed: int) -> tuple[list[dict], dict]:
@@ -29,8 +29,8 @@ def build_source(name: str, source: dict, seed: int) -> tuple[list[dict], dict]:
 
     for record, provenance in iter_source_records(source):
         stats["records_seen"] += 1
-        answer = caption_for(record, source)
-        if not answer:
+        pairs = qa_examples_for(record, source)
+        if not pairs:
             stats["missing_caption"] += 1
             continue
         video = resolver.resolve(record)
@@ -38,30 +38,33 @@ def build_source(name: str, source: dict, seed: int) -> tuple[list[dict], dict]:
             stats["missing_video"] += 1
             continue
         source_id = source_id_for(record, source, fallback=os.path.splitext(os.path.basename(video))[0])
-        key = (source_id, video)
-        if key in seen:
-            stats["duplicate"] += 1
-            continue
-        seen.add(key)
-        item = {
-            "video": video,
-            "question": source["question"],
-            "answer": answer,
-            "source_dataset": name,
-            "source_id": source_id,
-            "provenance": provenance,
-        }
         start = optional_number(record, list(source.get("start_fields", [])))
         end = optional_number(record, list(source.get("end_fields", [])))
-        if start is not None and end is not None and end > start:
-            item["start"], item["end"] = start, end
-        stats["valid"] += 1
-        if len(reservoir) < limit:
-            reservoir.append(item)
-        else:
-            replacement = rng.randrange(stats["valid"])
-            if replacement < limit:
-                reservoir[replacement] = item
+        for question, answer in pairs:
+            # Native LLaVA records can have two different QA turns per video;
+            # retain both while still suppressing exact repeated turns.
+            key = (source_id, video, question)
+            if key in seen:
+                stats["duplicate"] += 1
+                continue
+            seen.add(key)
+            item = {
+                "video": video,
+                "question": question,
+                "answer": answer,
+                "source_dataset": name,
+                "source_id": source_id,
+                "provenance": provenance,
+            }
+            if start is not None and end is not None and end > start:
+                item["start"], item["end"] = start, end
+            stats["valid"] += 1
+            if len(reservoir) < limit:
+                reservoir.append(item)
+            else:
+                replacement = rng.randrange(stats["valid"])
+                if replacement < limit:
+                    reservoir[replacement] = item
 
     stats["selected"] = len(reservoir)
     if len(reservoir) < minimum:

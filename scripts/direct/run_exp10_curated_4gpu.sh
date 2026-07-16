@@ -19,12 +19,13 @@ MODEL_ROOT="${MODEL_ROOT:-${BASE}/models/Qwen3-VL-2B-Instruct}"
 MVB="${MVB:-/data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/MVBench/MVBench_v3_5_0.jsonl}"
 TC="${TC:-/data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/Tempcompass/Tempcompass_v3_5_0.jsonl}"
 
-# To add InternVid after its audit passes, use TRAIN_SOURCES='vript internvid'.
-# Do not add WebVid by default: it is a lower-quality, watermarked breadth source.
-TRAIN_SOURCES="${TRAIN_SOURCES:-vript}"
+# Four complementary, user-verified processed sources. WebVid is deliberately
+# absent: it adds watermarked, short-caption breadth after these sources, not
+# before them.
+TRAIN_SOURCES="${TRAIN_SOURCES:-llava_video vript internvid openvid1m}"
 REGISTRY="${REGISTRY:-configs/data_sources_exp10.yaml}"
-MIN_RAW_QA="${MIN_RAW_QA:-220000}"
-MIN_TRAIN_QA="${MIN_TRAIN_QA:-200000}"
+MIN_RAW_QA="${MIN_RAW_QA:-460000}"
+MIN_TRAIN_QA="${MIN_TRAIN_QA:-440000}"
 GRAD_ACCUM="${GRAD_ACCUM:-8}"
 
 RAW_DIR="${DATA_ROOT}/raw"

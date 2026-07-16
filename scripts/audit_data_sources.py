@@ -13,8 +13,9 @@ import json
 import os
 import sys
 
-from data_sources import (VideoResolver, caption_for, iter_source_records, load_registry,
+from data_sources import (VideoResolver, iter_source_records, load_registry,
                           metadata_files, select_sources, source_id_for)
+from data_sources import qa_examples_for
 
 
 def audit_one(name: str, source: dict, sample: int) -> dict:
@@ -36,22 +37,25 @@ def audit_one(name: str, source: dict, sample: int) -> dict:
     resolver = VideoResolver(source)
     for record, provenance in iter_source_records(source):
         result["sampled_records"] += 1
-        caption = caption_for(record, source)
-        video = resolver.resolve(record) if caption else ""
-        result["caption_present"] += bool(caption)
+        pairs = qa_examples_for(record, source)
+        video = resolver.resolve(record) if pairs else ""
+        result["caption_present"] += bool(pairs)
         result["video_resolved"] += bool(video)
         if len(result["examples"]) < 3:
             result["examples"].append({
                 "source_id": source_id_for(record, source),
-                "caption_chars": len(caption),
+                "caption_chars": len(pairs[0][1]) if pairs else 0,
                 "video": video,
                 "provenance": provenance,
             })
         if result["sampled_records"] >= sample:
             break
     enough = min(3, sample)
-    result["ready"] = bool(metadata) and result["video_root_accessible"] and \
-        result["caption_present"] >= enough and result["video_resolved"] >= enough
+    # A processed manifest may carry absolute video paths, so a separate
+    # `video_root` is optional.  Real local-file resolution—not merely a
+    # mounted directory—is the readiness condition.
+    result["ready"] = bool(metadata) and result["caption_present"] >= enough and \
+        result["video_resolved"] >= enough
     return result
 
 

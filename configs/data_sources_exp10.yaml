@@ -2,12 +2,16 @@
 #
 # This file is deliberately a source registry, not a claim that every listed
 # source is ready for training. `enabled: true` means the source is selected by
-# default.  `scripts/audit_data_sources.py --strict` must pass on the training
-# host before `scripts/prepare_caption_mix.py` will build a manifest.
+# default. `scripts/audit_data_sources.py --strict` must pass on the training
+# host before `scripts/prepare_caption_mix.py` will build a manifest. The
+# source paths in this registry are user-verified, processed local datasets.
 #
 # Benchmark-facing policy:
-#   * Do not add LLaVA-Video, Tarsier2, ActivityNet(/QA), NExT-QA, Charades,
-#     PerceptionTest, AGQA/STAR, TVQA, or their derived mixtures to this run.
+#   * Do not add Tarsier2, Charades/STAR, PerceptionTest, SSV2, CLEVRER, or TVQA
+#     to this run: they are explicit MVBench source collections.
+#   * ActivityNet(/QA) and NExT-QA are not current MVBench/TempCompass sources;
+#     they are allowed for this run but forbid later evaluation on their own
+#     held-out test sets unless an official train-only split is used.
 #   * Every emitted row carries source_dataset/source_id/provenance; the direct
 #     launcher then removes exact-ID/path collisions with MVBench+TempCompass.
 #   * ID/path checking cannot prove that a re-encoded copy is absent.  The
@@ -15,6 +19,27 @@
 #     ID-checked", never as a universal decontamination guarantee.
 
 sources:
+  # Native instruction data is the primary Phase-B format.  Keep ActivityNetQA
+  # and NExT-QA for the current MVBench+TempCompass-only protocol, while
+  # excluding known MVBench-source collections by provenance/path.
+  llava_video:
+    enabled: true
+    required: true
+    role: native_video_instruction
+    reader: llava
+    root: /data/vjuicefs_ai_ocr_wl/public_data/video_data/LLaVA-Video-178K
+    video_root: /data/vjuicefs_ai_ocr_wl/public_data/video_data/LLaVA-Video-178K
+    metadata:
+      - /data/vjuicefs_ai_ocr_wl/public_data/video_data/LLaVA-Video-178K
+    video_fields: [video_path, video]
+    id_fields: [video_id, id]
+    qa_per_video: 2
+    max_question_chars: 720
+    max_answer_chars: 720
+    exclude_patterns: [perceptiontest, perception_test, charades, star, ssv2, clevrer, tvqa]
+    max_samples: 180000
+    min_samples: 160000
+
   # Primary source. Dense clip captions explicitly describe content, shot type,
   # and camera movement, so it is the best fit for temporal video-language
   # supervision among the locally listed sources.
@@ -39,16 +64,14 @@ sources:
     caption_context_fields: [caption.shot_type, caption.camera_movement, caption.scene_title]
     question: "Describe the actions, scene, and any relevant camera movement in this video."
     max_answer_chars: 720
-    max_samples: 260000
-    min_samples: 220000
+    max_samples: 150000
+    min_samples: 130000
 
-  # Secondary source, deliberately disabled until the direct audit proves that
-  # the mounted copy contains resolvable local video paths.  Its 10M metadata
-  # contains video ID, timestamp, generated caption, and similarity score; do
-  # not build a 7M-file basename index for it.
+  # Broad, high-coverage secondary source. Its processed local metadata was
+  # validated by the user; retain the audit as a reproducible hard gate.
   internvid:
-    enabled: false
-    required: false
+    enabled: true
+    required: true
     role: broad_video_caption
     reader: generic
     metadata:
@@ -56,14 +79,14 @@ sources:
     video_root: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_data/vd-foundation___InternVid-10M-FLT
     video_fields: [video_path, video, path, filepath]
     id_fields: [video_id, videoID, YoutubeID, youtube_id, id]
-    caption_fields: [caption, text, description]
+    caption_fields: [caption, Caption, text, description]
     start_fields: [start, start_time, start_timestamp]
     end_fields: [end, end_time, end_timestamp]
     index_fallback: false
     question: "Describe the main actions and events in this video."
     max_answer_chars: 480
-    max_samples: 120000
-    min_samples: 90000
+    max_samples: 150000
+    min_samples: 120000
 
   # Useful only as a later breadth ablation.  It has short, noisier captions
   # and watermarks, so it is not part of the first evidence-generating run.
@@ -84,11 +107,11 @@ sources:
     max_samples: 100000
     min_samples: 75000
 
-  # Metadata is mounted, but the supplied inventory has no local video-root
-  # path.  Leave disabled rather than silently emitting nonexistent clips.
+  # High visual-quality complement. The processed metadata carries resolvable
+  # local paths, so no invented root path is required here.
   openvid1m:
-    enabled: false
-    required: false
+    enabled: true
+    required: true
     role: high_quality_caption_pending_video_root
     reader: generic
     metadata:
@@ -99,5 +122,5 @@ sources:
     caption_fields: [caption, description, text]
     question: "Describe this video in detail."
     max_answer_chars: 600
-    max_samples: 100000
-    min_samples: 75000
+    max_samples: 80000
+    min_samples: 60000

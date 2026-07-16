@@ -58,6 +58,12 @@ def _metadata_files(entry: str) -> list[str]:
 
 
 def metadata_files(source: dict[str, Any]) -> list[str]:
+    # LLaVA records live in several supported layouts and are enumerated by
+    # prepare_llava_video.iter_records().  Do not recursively stat every media
+    # file merely to make the audit's metadata-count field nonzero.
+    if source.get("reader") == "llava":
+        root = str(source.get("root") or source.get("video_root") or "")
+        return [root] if os.path.isdir(root) else []
     files: list[str] = []
     for entry in source.get("metadata", []):
         files.extend(_metadata_files(str(entry)))
@@ -109,6 +115,29 @@ def caption_for(record: dict[str, Any], source: dict[str, Any]) -> str:
             context.append(f"{label}: {value}")
     answer = ". ".join(context + [main]) if context else main
     return clean_text(answer, int(source.get("max_answer_chars", 600)))
+
+
+def qa_examples_for(record: dict[str, Any], source: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return one or more trainable QA pairs for a source record.
+
+    Most sources are caption datasets and therefore become one fixed
+    caption-as-answer pair.  LLaVA-Video is already an instruction dataset, so
+    retain its native human/assistant pairs rather than discarding its QA form.
+    """
+    if source.get("reader") == "llava":
+        from prepare_llava_video import extract_qa
+
+        limit = int(source.get("qa_per_video", 2))
+        pairs = []
+        for question, answer in extract_qa(record, max_pairs=limit):
+            question = clean_text(question, int(source.get("max_question_chars", 720)))
+            answer = clean_text(answer, int(source.get("max_answer_chars", 720)))
+            if question and answer:
+                pairs.append((question, answer))
+        return pairs
+    answer = caption_for(record, source)
+    question = str(source.get("question", "")).strip()
+    return [(question, answer)] if question and answer else []
 
 
 def source_id_for(record: dict[str, Any], source: dict[str, Any], fallback: str = "") -> str:
@@ -164,6 +193,23 @@ def _records_from_json(doc: Any, source: dict[str, Any]) -> Iterator[dict[str, A
 
 def iter_source_records(source: dict[str, Any]) -> Iterator[tuple[dict[str, Any], str]]:
     """Yield (record, metadata_file) without inventing missing fields."""
+    if source.get("reader") == "llava":
+        # Reuse the established LLaVA resolver. It understands both the flat
+        # jsonl/ and per-subset directory layouts and repairs stale absolute
+        # paths embedded by another machine.
+        from prepare_llava_video import iter_records
+
+        root = str(source.get("root") or source.get("video_root") or "")
+        if not root:
+            raise ValueError("LLaVA source needs root or video_root")
+        for video, record, source_jsonl in iter_records(
+            root, [], list(source.get("exclude_patterns", []))
+        ):
+            record = dict(record)
+            record["video_path"] = video
+            record.setdefault("source_jsonl", source_jsonl)
+            yield record, source_jsonl
+        return
     for path in metadata_files(source):
         suffix = os.path.splitext(path)[1].lower()
         try:

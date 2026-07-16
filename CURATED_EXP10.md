@@ -1,20 +1,26 @@
 # EXP-10: source-audited caption mixture on one 4×L40S host
 
 This replaces the LLaVA-only derivative as the clean mainline for the next
-comparison.  It is a paired four-arm experiment:
+comparison. It is a paired four-arm experiment:
 
 - CE control vs CE + JEPA/MSE treatment;
 - seed 0 and seed 1 for each arm;
 - same fixed caption-QA manifest, same synthetic temporal templates, same
   optimizer schedule and 4,000 steps in every arm.
 
-The default source is Vript only.  It is intentionally high-quality and dense
-enough to supply 220k–260k locally-resolved clips; do not add a large collection
-merely for its nominal row count.  InternVid is registered but disabled until
-the mounted metadata is proven to resolve to actual local video files.  WebVid
-is a later breadth ablation, not the default, because of short/noisy captions
-and watermarks.  OpenVid has no supplied local video root and is therefore not
-eligible yet.
+The default mixture uses four processed local sources: native LLaVA-Video QA
+(180k), Vript dense temporal captions (150k), InternVid broad video captions
+(150k), and OpenVid high-quality captions (80k). The target is up to 560k
+examples and a minimum of 460k after local-file validation. This gives each
+4,000-step arm approximately one pass over the mixture instead of looping a
+small manifest many times. WebVid is intentionally deferred: its watermarked,
+short-caption breadth is lower value than these four sources.
+
+LLaVA-Video keeps its ActivityNetQA and NExT-QA components for this
+MVBench+TempCompass-only experiment. The launcher excludes PerceptionTest and
+the other named MVBench source collections. This makes a later evaluation on
+NExT-QA or ActivityNetQA invalid unless the training rows are restricted to
+their official train split.
 
 ## What the gates prove
 
@@ -44,22 +50,12 @@ bash scripts/direct/run_exp10_curated_4gpu.sh train |& tee /data/vjuicefs_sz_ocr
 bash scripts/direct/run_exp10_curated_4gpu.sh eval |& tee /data/vjuicefs_sz_ocr_wl/public_data/11193960/logs/exp10.eval.log
 ```
 
-After the Vript-only run, add the secondary source only if its audit is clean:
-
-```bash
-TRAIN_SOURCES='vript internvid' FORCE_PREP=1 \
-  bash scripts/direct/run_exp10_curated_4gpu.sh prep
-```
-
-That rebuild changes the training manifest, so it is a new experiment rather
-than a resume of a Vript-only arm.
-
 ## Data scale rationale
 
 With per-GPU batch 4, four GPUs, and gradient accumulation 8, each 4,000-step
-arm consumes 512,000 examples.  A 220k–260k manifest yields roughly 2.3–2.0
-passes per arm, versus about eight passes for a 60k manifest.  This is enough
-data to test the method without pretending that millions of clips can be used
-in a 4,000-step fine-tune.  `train.min_flow` is zero: the existing `framediff`
-number is useful for diagnostics, but its old LLaVA-derived threshold is not a
-validated measure of temporal quality for this mixture.
+arm consumes 512,000 examples. A 460k–560k manifest yields about 1.1–0.9
+passes per arm, which uses diversity without pretending that every available
+million-scale sample can be consumed by this fine-tune. `train.min_flow` is
+zero: the existing `framediff` number is useful for diagnostics, but its old
+LLaVA-derived threshold is not a validated measure of temporal quality for this
+mixture.
