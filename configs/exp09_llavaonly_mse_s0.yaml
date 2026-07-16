@@ -1,0 +1,5 @@
+_base_: exp9_mse.yaml
+train:
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp09_llavaonly/qa_train_flow.jsonl
+  min_flow: 8.42
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp09_llavaonly_mse_s0

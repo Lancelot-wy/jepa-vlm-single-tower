@@ -1,0 +1,4 @@
+_base_: exp09_llavaonly_sft_s0.yaml
+train:
+  seed: 1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp09_llavaonly_sft_s1

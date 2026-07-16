@@ -74,7 +74,7 @@ def main():
     ap.add_argument("--method", default="framediff", choices=["framediff", "farneback"])
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--resume", action="store_true",
-                    help="skip videos already present in --out and append")
+                    help="reuse scores from --out(.scores.jsonl), then rebuild the full output")
     args = ap.parse_args()
 
     if args.method == "farneback":
@@ -87,33 +87,56 @@ def main():
 
     with open(args.manifest) as f:
         items = [json.loads(l) for l in f if l.strip()]
+    if not items:
+        raise ValueError(f"empty manifest {args.manifest}")
 
-    done = set()
-    if args.resume and os.path.exists(args.out):
-        with open(args.out) as f:
-            for l in f:
-                l = l.strip()
-                if not l:
-                    continue
-                try:
-                    done.add(json.loads(l)["video"])
-                except Exception:
-                    continue
-        print(f"resume: {len(done)} already scored, skipping them")
-    pending = [it for it in items if it["video"] not in done]
+    # QA manifests commonly carry two questions for one video.  Decode and score
+    # the video once, then copy its scalar score to every QA record.  The sidecar
+    # keeps interruption/resume cheap without leaving a partially expanded output.
+    unique = {}
+    for item in items:
+        unique.setdefault(item["video"], item)
+    scores_path = args.out + ".scores.jsonl"
+    scores: dict[str, float | None] = {}
+    if args.resume:
+        for prior in (scores_path, args.out):
+            if not os.path.exists(prior):
+                continue
+            with open(prior) as f:
+                for l in f:
+                    try:
+                        prior_item = json.loads(l)
+                        if "video" in prior_item and "flow" in prior_item:
+                            scores.setdefault(prior_item["video"], prior_item["flow"])
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+        print(f"resume: {len(scores)}/{len(unique)} unique videos already scored")
+
+    pending = [item for video, item in unique.items() if video not in scores]
     tasks = [(it, args.data_root) for it in pending]
-    open_mode = "a" if (args.resume and done) else "w"
-    with ProcessPoolExecutor(args.workers) as ex, open(args.out, open_mode) as out:
-        for i, item in enumerate(ex.map(score, tasks, chunksize=16)):
-            out.write(json.dumps(item) + "\n")
-            out.flush()
-            if i % 1000 == 0:
-                print(f"{i}/{len(tasks)} (pending)")
+    open_mode = "a" if (args.resume and scores) else "w"
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    with ProcessPoolExecutor(args.workers) as ex, open(scores_path, open_mode) as score_out:
+        for i, item in enumerate(ex.map(score, tasks, chunksize=16), start=1):
+            scores[item["video"]] = item["flow"]
+            score_out.write(json.dumps({"video": item["video"], "flow": item["flow"]}) + "\n")
+            score_out.flush()
+            if i % 1000 == 0 or i == len(tasks):
+                print(f"{i}/{len(tasks)} unique videos (pending)")
 
-    with open(args.out) as f:
-        flows = np.array([json.loads(l)["flow"] for l in f
-                          if l.strip() and json.loads(l).get("flow") is not None])
-    print(f"\ndone: {len(flows)}/{len(items)} scored (method={args.method})")
+    if len(scores) != len(unique):
+        raise RuntimeError(f"incomplete scoring: {len(scores)}/{len(unique)} unique videos")
+    tmp_out = args.out + ".tmp"
+    with open(tmp_out, "w") as out:
+        for item in items:
+            item = dict(item)
+            item["flow"] = scores[item["video"]]
+            out.write(json.dumps(item, ensure_ascii=False) + "\n")
+    os.replace(tmp_out, args.out)
+
+    flows = np.array([v for v in scores.values() if v is not None])
+    print(f"\ndone: {len(flows)}/{len(unique)} unique videos scored; "
+          f"expanded to {len(items)} manifest rows (method={args.method})")
     if len(flows):
         qs = [5, 10, 20, 30, 50, 70, 90]
         print("flow percentiles:")

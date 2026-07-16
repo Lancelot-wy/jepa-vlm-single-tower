@@ -30,7 +30,10 @@ def load_manifest(path: str, min_flow: float = 0.0) -> list[dict]:
             if not line:
                 continue
             d = json.loads(line)
-            if min_flow > 0 and d.get("flow") is not None and d["flow"] < min_flow:
+            # When a flow threshold is requested, a failed decode (flow=None)
+            # must not enter training and fail later in a DataLoader worker.
+            # Manifests without flow are still supported when min_flow == 0.
+            if min_flow > 0 and (d.get("flow") is None or d["flow"] < min_flow):
                 continue
             items.append(d)
     if not items:
