@@ -54,6 +54,7 @@ image: ${IMAGE}
 dataPaths:
 - /data/vjuicefs_sz_ocr_wl/public_data
 - /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
 tmpfs: true
 restartPolicy: Never
 run:
