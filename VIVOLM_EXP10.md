@@ -18,9 +18,9 @@ Phase-A / EXP-09 记录，**不能**用于当前实验。
 
 平台挂载已固定为以下三项，缺任意一项会在 GPU 训练前失败：
 
-- `sz_ocr`：共享环境、Qwen3-VL 权重、输出、评测文件，以及 Vript/InternVid 视频；
+- `sz_ocr`：共享环境、Qwen3-VL 权重、输出、评测文件、三套处理后 metadata，以及 InternVid 视频；
 - `ai_ocr`：LLaVA-Video-178K 媒体与标注；
-- `ai_gpt_vision_wl04`：Vript 和 OpenVid 元数据。
+- `ai_gpt_vision_wl04`：Vript 与 OpenVid 记录引用的绝对媒体路径。
 
 ## 新开发机：无 SSH 密钥的拉取与提交
 

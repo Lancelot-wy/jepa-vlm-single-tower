@@ -17,6 +17,10 @@
 optimizer-update 步数均与原始配对设计相同。rank 0 先写共享 manifest，其他三台等
 `gates_ready`，因此不会发生并发数据构建。
 
+处理后路径、conversation 字段及 caption/grounding 语义见
+[UNIFIED_VIDEO_DATA.md](UNIFIED_VIDEO_DATA.md)。Cloud 不得把 registry 改回旧版原始
+metadata 或启用 basename 全盘索引。
+
 ## Cloud 只需执行的命令
 
 在开发机执行，不能在调度到的 GPU Pod 内 `git pull` 或 `pip install`：

@@ -13,12 +13,13 @@ import collections
 import json
 import os
 import random
+import time
 
 from data_sources import (VideoResolver, iter_source_records, load_registry, optional_number,
                           qa_examples_for, select_sources, source_id_for)
 
 
-def build_source(name: str, source: dict, seed: int) -> tuple[list[dict], dict]:
+def build_source(name: str, source: dict, seed: int, progress_every: int) -> tuple[list[dict], dict]:
     limit = int(source["max_samples"])
     minimum = int(source["min_samples"])
     rng = random.Random(f"{seed}:{name}")
@@ -26,50 +27,60 @@ def build_source(name: str, source: dict, seed: int) -> tuple[list[dict], dict]:
     reservoir: list[dict] = []
     seen: set[tuple[str, str]] = set()
     stats = collections.Counter()
+    started = time.monotonic()
 
     for record, provenance in iter_source_records(source):
         stats["records_seen"] += 1
         pairs = qa_examples_for(record, source)
         if not pairs:
             stats["missing_caption"] += 1
-            continue
-        video = resolver.resolve(record)
-        if not video:
-            stats["missing_video"] += 1
-            continue
-        source_id = source_id_for(record, source, fallback=os.path.splitext(os.path.basename(video))[0])
-        start = optional_number(record, list(source.get("start_fields", [])))
-        end = optional_number(record, list(source.get("end_fields", [])))
-        for question, answer in pairs:
-            # Native LLaVA records can have two different QA turns per video;
-            # retain both while still suppressing exact repeated turns.
-            key = (source_id, video, question)
-            if key in seen:
-                stats["duplicate"] += 1
-                continue
-            seen.add(key)
-            item = {
-                "video": video,
-                "question": question,
-                "answer": answer,
-                "source_dataset": name,
-                "source_id": source_id,
-                "provenance": provenance,
-            }
-            if start is not None and end is not None and end > start:
-                item["start"], item["end"] = start, end
-            stats["valid"] += 1
-            if len(reservoir) < limit:
-                reservoir.append(item)
+        else:
+            video = resolver.resolve(record)
+            if not video:
+                stats["missing_video"] += 1
             else:
-                replacement = rng.randrange(stats["valid"])
-                if replacement < limit:
-                    reservoir[replacement] = item
+                source_id = source_id_for(record, source, fallback=os.path.splitext(os.path.basename(video))[0])
+                start = optional_number(record, list(source.get("start_fields", [])))
+                end = optional_number(record, list(source.get("end_fields", [])))
+                for question, answer in pairs:
+                    # Native LLaVA records can have two different QA turns per video;
+                    # retain both while still suppressing exact repeated turns.
+                    key = (source_id, video, question)
+                    if key in seen:
+                        stats["duplicate"] += 1
+                        continue
+                    seen.add(key)
+                    item = {
+                        "video": video,
+                        "question": question,
+                        "answer": answer,
+                        "source_dataset": name,
+                        "source_category": str(record.get("category") or source.get("role") or "unknown"),
+                        "source_id": source_id,
+                        "provenance": provenance,
+                    }
+                    if start is not None and end is not None and end > start:
+                        item["start"], item["end"] = start, end
+                    stats["valid"] += 1
+                    if len(reservoir) < limit:
+                        reservoir.append(item)
+                    else:
+                        replacement = rng.randrange(stats["valid"])
+                        if replacement < limit:
+                            reservoir[replacement] = item
+        if progress_every and stats["records_seen"] % progress_every == 0:
+            elapsed = max(time.monotonic() - started, 1e-6)
+            print(
+                f"[prepare:{name}] scanned={stats['records_seen']} valid={stats['valid']} "
+                f"selected={len(reservoir)} missing_video={stats['missing_video']} "
+                f"rate={stats['records_seen'] / elapsed:.0f} records/s",
+                flush=True,
+            )
 
     stats["selected"] = len(reservoir)
     if len(reservoir) < minimum:
         raise RuntimeError(
-            f"{name}: only {len(reservoir)} valid locally-resolved caption clips; need at least {minimum}. "
+            f"{name}: only {len(reservoir)} valid locally-resolved training examples; need at least {minimum}. "
             f"missing_video={stats['missing_video']}. Run audit_data_sources.py and fix the mapping first."
         )
     return reservoir, dict(stats)
@@ -82,13 +93,15 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--report", default="")
     ap.add_argument("--seed", type=int, default=20260716)
+    ap.add_argument("--progress-every", type=int, default=10000,
+                    help="emit bounded progress every N records (0 disables it)")
     args = ap.parse_args()
 
     registry = load_registry(args.registry)
     items: list[dict] = []
     reports: dict[str, dict] = {}
     for name, source in select_sources(registry, args.sources):
-        selected, stats = build_source(name, source, args.seed)
+        selected, stats = build_source(name, source, args.seed, args.progress_every)
         items.extend(selected)
         reports[name] = stats
         print(f"{name}: {stats}")
@@ -135,6 +148,7 @@ def main() -> None:
         "manifest": os.path.abspath(args.out),
         "rows": len(items),
         "by_source": {name: sum(1 for item in items if item["source_dataset"] == name) for name in reports},
+        "by_source_category": dict(collections.Counter(item["source_category"] for item in items)),
         "source_stats": reports,
         "cross_source_exact_path_duplicates_dropped": dict(cross_source_exact_path_duplicates),
         "caveat": "Exact real-path duplicates across sources are removed. Re-encoded, renamed, or separately-mounted copies are not detectable here; run benchmark ID/path filtering next.",

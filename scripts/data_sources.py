@@ -71,12 +71,30 @@ def metadata_files(source: dict[str, Any]) -> list[str]:
 
 
 def get_field(record: dict[str, Any], dotted_name: str) -> Any:
-    value: Any = record
-    for key in dotted_name.split("."):
-        if not isinstance(value, dict):
-            return None
-        value = value.get(key)
-    return value
+    """Read a dotted field while tolerating media lists in processed records.
+
+    The unified caption/grounding export may represent a video as ``video``,
+    as a nested media object, or as a list of media objects.  Returning a list
+    for an un-indexed list path lets :class:`VideoResolver` try every explicit
+    candidate without scanning a media directory.
+    """
+    keys = dotted_name.split(".")
+
+    def visit(value: Any, remaining: list[str]) -> Any:
+        if not remaining:
+            return value
+        key, rest = remaining[0], remaining[1:]
+        if isinstance(value, dict):
+            return visit(value.get(key), rest)
+        if isinstance(value, (list, tuple)):
+            if key.isdigit():
+                index = int(key)
+                return visit(value[index], rest) if 0 <= index < len(value) else None
+            found = [visit(item, remaining) for item in value]
+            return [item for item in found if item is not None]
+        return None
+
+    return visit(record, keys)
 
 
 def first_text(record: dict[str, Any], fields: list[str]) -> str:
@@ -124,7 +142,11 @@ def qa_examples_for(record: dict[str, Any], source: dict[str, Any]) -> list[tupl
     caption-as-answer pair.  LLaVA-Video is already an instruction dataset, so
     retain its native human/assistant pairs rather than discarding its QA form.
     """
-    if source.get("reader") == "llava":
+    if source.get("reader") in ("llava", "conversation"):
+        allowed_categories = {str(value).lower() for value in source.get("allowed_categories", [])}
+        category = str(record.get("category", "")).lower()
+        if allowed_categories and category not in allowed_categories:
+            return []
         from prepare_llava_video import extract_qa
 
         limit = int(source.get("qa_per_video", 2))
@@ -180,7 +202,12 @@ def _records_from_json(doc: Any, source: dict[str, Any]) -> Iterator[dict[str, A
                     yield record
             return
 
-    # A one-record JSON or a mapping keyed by clip ID.
+    # A one-record JSON or a mapping keyed by clip ID.  The processed unified
+    # export is conversation-first, so a grounding record can intentionally
+    # have no legacy ``caption`` field at all.
+    if source.get("reader") == "conversation" and isinstance(doc.get("conversations"), list):
+        yield doc
+        return
     if any(get_field(doc, field) not in (None, "") for field in source.get("caption_fields", [])):
         yield doc
         return
@@ -189,6 +216,42 @@ def _records_from_json(doc: Any, source: dict[str, Any]) -> Iterator[dict[str, A
             record = dict(record)
             record.setdefault("id", key)
             yield record
+
+
+def _iter_jsonl_records(path: str) -> Iterator[dict[str, Any]]:
+    with open(path) as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(record, dict):
+                yield record
+
+
+def _is_json_lines_file(path: str) -> bool:
+    """Detect JSONL files that carry a misleading ``.json`` extension.
+
+    A pretty JSON object starts with a partial line such as ``{`` and fails the
+    single-line parse.  Two fully parseable, non-empty JSON object lines are a
+    reliable enough signature for the sharded processed exports, and let us
+    stream them rather than materializing a large shard with ``json.load``.
+    """
+    records: list[dict[str, Any]] = []
+    with open(path) as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError:
+                return False
+            if not isinstance(value, dict):
+                return False
+            records.append(value)
+            if len(records) == 2:
+                return True
+    return False
 
 
 def iter_source_records(source: dict[str, Any]) -> Iterator[tuple[dict[str, Any], str]]:
@@ -214,22 +277,18 @@ def iter_source_records(source: dict[str, Any]) -> Iterator[tuple[dict[str, Any]
         suffix = os.path.splitext(path)[1].lower()
         try:
             if suffix == ".jsonl":
-                with open(path) as f:
-                    for line in f:
-                        try:
-                            record = json.loads(line)
-                        except json.JSONDecodeError:
-                            continue
-                        if isinstance(record, dict):
-                            yield record, path
+                yield from ((record, path) for record in _iter_jsonl_records(path))
             elif suffix == ".csv":
                 with open(path, newline="") as f:
                     for record in csv.DictReader(f):
                         yield dict(record), path
             elif suffix == ".json":
-                with open(path) as f:
-                    doc = json.load(f)
-                yield from ((record, path) for record in _records_from_json(doc, source))
+                if _is_json_lines_file(path):
+                    yield from ((record, path) for record in _iter_jsonl_records(path))
+                else:
+                    with open(path) as f:
+                        doc = json.load(f)
+                    yield from ((record, path) for record in _records_from_json(doc, source))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             print(f"[data-source] skip unreadable metadata {path}: {exc}")
 
@@ -258,11 +317,21 @@ class VideoResolver:
         self._index: dict[str, str] | None = None
 
     def _candidate_values(self, record: dict[str, Any]) -> list[str]:
+        def strings_from(value: Any) -> list[str]:
+            if isinstance(value, str) and value.strip():
+                return [value.strip()]
+            if isinstance(value, (list, tuple)):
+                return [text for child in value for text in strings_from(child)]
+            if isinstance(value, dict):
+                media_keys = ("path", "video", "video_path", "filepath", "file_path",
+                              "local_path", "uri", "url")
+                return [text for key in media_keys for text in strings_from(value.get(key))]
+            return []
+
         values: list[str] = []
         for field in self.source.get("video_fields", []):
             value = get_field(record, field)
-            if isinstance(value, str) and value.strip():
-                values.append(value.strip())
+            values.extend(strings_from(value))
         flat = _flat_record(record)
         for template in self.source.get("path_templates", []):
             try:

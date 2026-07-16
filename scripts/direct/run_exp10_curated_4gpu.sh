@@ -115,17 +115,21 @@ raw_path, clean_path, min_raw, min_clean = sys.argv[1:]
 raw = sum(1 for line in open(raw_path) if line.strip())
 clean = sum(1 for line in open(clean_path) if line.strip())
 sources = {}
+categories = {}
 for line in open(clean_path):
     if line.strip():
         d = json.loads(line)
         sources[d.get("source_dataset", "<missing>")] = sources.get(d.get("source_dataset", "<missing>"), 0) + 1
-print(f"manifest gate: raw={raw}, benchmark-ID/path-clean={clean}, sources={sources}")
+        categories[d.get("source_category", "<missing>")] = categories.get(d.get("source_category", "<missing>"), 0) + 1
+print(f"manifest gate: raw={raw}, benchmark-ID/path-clean={clean}, sources={sources}, categories={categories}")
 if raw < int(min_raw):
     raise SystemExit(f"raw data gate failed: {raw} < {min_raw}")
 if clean < int(min_clean):
     raise SystemExit(f"clean data gate failed: {clean} < {min_clean}")
 if "<missing>" in sources:
     raise SystemExit("manifest provenance gate failed: source_dataset is missing")
+if "<missing>" in categories or "unknown" in categories:
+    raise SystemExit("manifest provenance gate failed: source_category is missing")
 PY
 }
 

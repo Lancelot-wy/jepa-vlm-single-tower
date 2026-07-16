@@ -1,16 +1,17 @@
-# EXP-10: source-audited caption mixture on one 4×L40S host
+# EXP-10: source-audited unified video-instruction mixture
 
 This replaces the LLaVA-only derivative as the clean mainline for the next
 comparison. It is a paired four-arm experiment:
 
 - CE control vs CE + JEPA/MSE treatment;
 - seed 0 and seed 1 for each arm;
-- same fixed caption-QA manifest, same synthetic temporal templates, same
+- same fixed video-instruction manifest, same synthetic temporal templates, same
   optimizer schedule and 4,000 steps in every arm.
 
 The default mixture uses four processed local sources: native LLaVA-Video QA
-(180k), Vript dense temporal captions (150k), InternVid broad video captions
-(150k), and OpenVid high-quality captions (80k). The target is up to 560k
+(180k), Vript dense temporal caption conversations (150k), InternVid broad
+caption conversations (150k), and OpenVid temporal-grounding conversations
+(80k). The target is up to 560k
 examples and a minimum of 460k after local-file validation. This gives each
 4,000-step arm approximately one pass over the mixture instead of looping a
 small manifest many times. WebVid is intentionally deferred: its watermarked,
@@ -59,6 +60,9 @@ weights, temporal sampling, or the evaluation protocol.
 For the canonical vivolm queue submission (four Workers × four L40S GPUs; one
 arm per Worker), read [VIVOLM_EXP10.md](VIVOLM_EXP10.md).  Do not submit this
 experiment through the historical `job.yaml` or `scripts/cluster/submit_batch.sh`.
+
+The processed paths, conversation contract, category semantics, and bounded
+loading behavior are documented in [UNIFIED_VIDEO_DATA.md](UNIFIED_VIDEO_DATA.md).
 
 ## Direct commands
 

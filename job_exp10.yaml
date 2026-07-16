@@ -17,9 +17,9 @@ business: VideoFoundationModel1b-wl01
 image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
 
 # Required by configs/data_sources_exp10.yaml:
-# - sz_ocr: deployment, env, model, outputs, Vript/InternVid videos, eval JSONL
+# - sz_ocr: deployment, env, model, outputs, processed metadata, InternVid media, eval JSONL
 # - ai_ocr: LLaVA-Video media and metadata
-# - ai_gpt_vision_wl04: Vript and OpenVid metadata
+# - ai_gpt_vision_wl04: absolute Vript/OpenVid media paths carried by processed records
 dataPaths:
 - /data/vjuicefs_sz_ocr_wl/public_data
 - /data/vjuicefs_ai_ocr_wl/public_data
