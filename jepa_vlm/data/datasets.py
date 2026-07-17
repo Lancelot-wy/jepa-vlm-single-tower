@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import numpy as np
 import torch
@@ -96,7 +97,26 @@ class ManifestVideoDataset(Dataset):
             frames = frames[perm].copy()
         return frames, label
 
+    _MAX_DECODE_RETRIES = 8
+
+    def _resample_index(self, i: int, attempt: int) -> int:
+        fb = np.random.default_rng(self.seed * 100003 + i * 1009 + attempt * 90173 + 1)
+        return int(fb.integers(0, len(self.items)))
+
     def __getitem__(self, i: int):
+        j = i
+        for attempt in range(self._MAX_DECODE_RETRIES + 1):
+            try:
+                return self._build_sample(j)
+            except Exception as exc:
+                budget = getattr(self, "_decode_warn_left", 20)
+                if budget > 0:
+                    self._decode_warn_left = budget - 1
+                    print(f"[dataset] skip undecodable idx={j}: {exc}", file=sys.stderr, flush=True)
+                j = self._resample_index(i, attempt)
+        raise RuntimeError(f"decode failed for {self._MAX_DECODE_RETRIES + 1} samples from index {i}")
+
+    def _build_sample(self, i: int):
         it = self.items[i]
         # Keep video offset selection reproducible across paired arms.  The
         # DataLoader shuffle order may change, but a manifest row always maps
@@ -202,7 +222,7 @@ class QAVideoDataset(ManifestVideoDataset):
              "(A) left\n(B) right\nAnswer with the option's letter.")
         return frames, q, ("(B) right" if right else "(A) left")
 
-    def __getitem__(self, i: int):
+    def _build_sample(self, i: int):
         it = self.items[i]
         # Do not use default_rng(None) here: it draws OS entropy independently
         # in CE and MTP arms, invalidating a same-seed paired comparison.
