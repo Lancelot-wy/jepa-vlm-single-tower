@@ -6,7 +6,6 @@
 
 type: jexp11-orca-b
 business: VideoFoundationModel1b-wl01
-subBusiness: mm-general
 image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
 dataPaths:
 - /data/vjuicefs_sz_ocr_wl/public_data
