@@ -46,7 +46,7 @@ preflight() {
   require_path file "$CLEAN_QA"
   require_path file "$MVB"
   require_path file "$TC"
-  require_path file "${PROJECT}/scripts/direct/run_ddp.sh"
+  require_path file "${PROJECT}/scripts/cluster/train_multinode.sh"
   for arm in "${ARMS[@]}"; do require_path file "${PROJECT}/configs/${arm}.yaml"; done
   mkdir -p "$OUTPUT_ROOT" "$RESULTS_ROOT"
   [[ "$NPROC_PER_NODE" =~ ^[1-9][0-9]*$ ]] || die "NPROC_PER_NODE must be a positive integer"
@@ -82,7 +82,7 @@ run_smoke() {
     CONFIG="configs/${arm}.yaml" NPROC_PER_NODE=4 NNODES=1 NODE_RANK=0 \
       MASTER_ADDR=127.0.0.1 GRAD_ACCUM="$GRAD_ACCUM" \
       EXTRA_OVERRIDES="train.output_dir=${out} train.max_steps=2 train.save_every=2 train.eval_every=999999 train.log_every=1" \
-      bash scripts/direct/run_ddp.sh
+      bash scripts/cluster/train_multinode.sh
     [[ -f "$out/step_2/state.pt" ]] || die "smoke failed for $arm"
   done
 }
@@ -119,7 +119,7 @@ train_arm() {
   CONFIG="configs/${arm}.yaml" NPROC_PER_NODE="$NPROC_PER_NODE" NNODES="$NNODES" NODE_RANK="$NODE_RANK" \
     MASTER_ADDR="$MASTER_ADDR" GRAD_ACCUM="$GRAD_ACCUM" \
     EXTRA_OVERRIDES="train.output_dir=${out} train.max_steps=${MAX_STEPS} ${resume}" \
-    bash scripts/direct/run_ddp.sh
+    bash scripts/cluster/train_multinode.sh
   is_final_checkpoint "$final/state.pt" || die "$arm did not produce step_${MAX_STEPS}"
 }
 
