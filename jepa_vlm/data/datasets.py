@@ -12,15 +12,48 @@ Phase B QA manifest: {"video": ..., "question": ..., "answer": ...}.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import signal
 import sys
+import threading
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 
 from .video_io import decode_frames, patchify, resize_center_crop
+
+
+class _DecodeTimeout(Exception):
+    """Raised when building a single sample exceeds its wall-clock budget."""
+
+
+@contextlib.contextmanager
+def _hard_timeout(seconds: int):
+    """Abort a hung decode with SIGALRM.
+
+    A corrupt clip can make libav block forever inside ``av.open`` / decode
+    without raising, which silently freezes a DataLoader worker and, in DDP,
+    deadlocks every rank in the arm at the next collective.  ``signal.alarm``
+    can only arm from the main thread, so in any other thread (or when the
+    budget is non-positive) we no-op and rely on the plain exception path.
+    """
+    if seconds <= 0 or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def _fire(signum, frame):
+        raise _DecodeTimeout(f"decode exceeded {seconds}s")
+
+    previous = signal.signal(signal.SIGALRM, _fire)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def load_manifest(path: str, min_flow: float = 0.0) -> list[dict]:
@@ -98,6 +131,7 @@ class ManifestVideoDataset(Dataset):
         return frames, label
 
     _MAX_DECODE_RETRIES = 8
+    _DECODE_TIMEOUT_SEC = 30
 
     def _resample_index(self, i: int, attempt: int) -> int:
         fb = np.random.default_rng(self.seed * 100003 + i * 1009 + attempt * 90173 + 1)
@@ -123,11 +157,12 @@ class ManifestVideoDataset(Dataset):
         # to one deterministic augmentation under a given train seed.
         rng = np.random.default_rng(self.seed * 100003 + i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
-        frames = decode_frames(
-            path, self.num_frames, self.sample_fps, self.frame_sampling,
-            start=it.get("start"), end=it.get("end"),
-            random_offset=self.training, rng=rng,
-        )
+        with _hard_timeout(self._DECODE_TIMEOUT_SEC):
+            frames = decode_frames(
+                path, self.num_frames, self.sample_fps, self.frame_sampling,
+                start=it.get("start"), end=it.get("end"),
+                random_offset=self.training, rng=rng,
+            )
         label = int(it.get("label", -1) if it.get("label") is not None else -1)
         frames, label = self._apply_temporal(frames, rng, label)
         pixel_values, grid = patchify(
@@ -243,11 +278,12 @@ class QAVideoDataset(ManifestVideoDataset):
             if speed_fast:
                 fps = self.sample_fps / 2.0
 
-        frames = decode_frames(
-            path, self.num_frames, fps, self.frame_sampling,
-            start=it.get("start"), end=it.get("end"),
-            random_offset=self.training, rng=rng,
-        )
+        with _hard_timeout(self._DECODE_TIMEOUT_SEC):
+            frames = decode_frames(
+                path, self.num_frames, fps, self.frame_sampling,
+                start=it.get("start"), end=it.get("end"),
+                random_offset=self.training, rng=rng,
+            )
 
         if template is None:
             question, answer = it.get("question", ""), it.get("answer", "")
