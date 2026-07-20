@@ -16,7 +16,7 @@ MVB="${MVB:-/data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/e
 TC="${TC:-/data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/Tempcompass/Tempcompass_v3_5_0.jsonl}"
 CLEAN_QA="${DATA_ROOT}/qa_train_clean.jsonl"
 GRAD_ACCUM="${GRAD_ACCUM:-1}"
-MAX_STEPS="${EXP11_MAX_STEPS:-1000}"
+MAX_STEPS="${EXP11_MAX_STEPS:-4000}"
 SAVE_EVERY="${EXP11_SAVE_EVERY:-250}"
 CONTROL_ARM="exp11_frozen_sft_s0"
 CONTROL_DIR="${EXP11_CONTROL_DIR:-${BASE}/outputs/${CONTROL_ARM}}"
@@ -71,8 +71,8 @@ from jepa_vlm.config import load_config
 expected_steps = int(sys.argv[1])
 control_dir, control_world, clean_qa = sys.argv[2], int(sys.argv[3]), sys.argv[4]
 deep_gate, results_root = bool(int(sys.argv[5])), sys.argv[6]
-if expected_steps != 1000:
-    raise SystemExit("reused EXP-11 control is defined at exactly 1000 optimizer updates")
+if expected_steps != 4000:
+    raise SystemExit("reused EXP-11 control is defined at exactly 4000 optimizer updates")
 
 expected = load_config(
     "configs/exp11_frozen_sft_s0.yaml",

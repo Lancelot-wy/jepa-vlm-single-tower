@@ -5,10 +5,11 @@ BASE="${BASE:-/data/vjuicefs_sz_ocr_wl/public_data/11193960}"
 RUN_ID="${1:?usage: $0 <run-id>}"
 ROOT="${BASE}/runs/exp11_orca/${RUN_ID}"
 CONTROL_DIR="${EXP11_CONTROL_DIR:-${BASE}/outputs/exp11_frozen_sft_s0}"
+MAX_STEPS="${EXP11_MAX_STEPS:-4000}"
 ARMS=(exp11_mask15_s0 exp11_orca_noquery_s0 exp11_orca_obs_s0)
 [[ -d "$ROOT" ]] || { echo "missing run: $ROOT" >&2; exit 1; }
 echo "run_id=${RUN_ID} root=${ROOT}"
-echo "[exp11_frozen_sft_s0] reused_control=${CONTROL_DIR} checkpoint=$([[ -f "$CONTROL_DIR/step_1000/state.pt" ]] && echo present || echo missing)"
+echo "[exp11_frozen_sft_s0] reused_control=${CONTROL_DIR} checkpoint=$([[ -f "$CONTROL_DIR/step_${MAX_STEPS}/state.pt" ]] && echo present || echo missing)"
 for arm in "${ARMS[@]}"; do
   log="$ROOT/outputs/$arm/log.jsonl"
   ckpts="$(find "$ROOT/outputs/$arm" -maxdepth 2 -name state.pt 2>/dev/null | sort -V | tail -3 | tr '\n' ' ')"

@@ -39,10 +39,10 @@ a material value is a stop-and-debug signal.
 | `exp11_orca_noquery_s0` | train | native clean video | frozen independent-frame ViT | current-token hidden states + matched 2-layer MLP, gap=2 | 0.1 |
 | `exp11_orca_obs_s0` | train | native clean video | frozen independent-frame ViT | 4 learned queries + matched 2-layer MLP, gap=2 | 0.1 |
 
-The earlier 4,000-step EXP-10 SFT cannot be used as this control because it trained
-the ViT.  Today's 1,000-step Frozen SFT can be reused only if the launch gate confirms
+The earlier trainable-ViT EXP-10 SFT cannot be used as this control even though it also
+ran for 4,000 steps.  Today's 4,000-step Frozen SFT can be reused only if the launch gate confirms
 that its scientific config matches `configs/exp11_frozen_sft_s0.yaml`, its checkpoint
-is optimizer update 1,000, its embedded config matches `config.json`, it points to the
+is optimizer update 4,000, its embedded config matches `config.json`, it points to the
 same clean manifest, that manifest is not newer than the checkpoint, and its declared
 world size gives effective batch 128.  The current manifest SHA-256 is printed in the
 gate log.  If any check fails, the job exits before training; do not call a mismatched
@@ -67,20 +67,20 @@ uses no training allocation:
 - 8 Workers / 32 GPUs per arm;
 - per-device batch 4, gradient accumulation 1;
 - effective batch `4 * 32 * 1 = 128` per optimizer update;
-- 1,000 optimizer updates, warmup 100;
-- atomic checkpoints at steps 250, 500, 750, and 1,000;
+- 4,000 optimizer updates, warmup 400;
+- atomic checkpoints every 250 updates through step 4,000;
 - full MVBench and TempCompass evaluation for the reused control and all three new
   arms after training finishes;
 - `restartPolicy: Never`; the entrypoint exits after evaluation so the allocation is released.
 
-This is a mechanism pilot, not a final positive-claim run.  If it passes, promote the
-winning objective to 4,000 steps and a second seed.  If it fails, do not scale the same
-objective merely by adding steps or generic caption data.
+This is a full-budget mechanism comparison, not yet a final positive claim.  If it
+passes, repeat the winning objective with a second seed.  If it fails, do not scale
+the same objective merely by adding steps or generic caption data.
 
 ## Launch
 
 First locate today's completed Frozen-SFT output.  It must contain both
-`config.json` and `step_1000/state.pt`.  From the shared server checkout:
+`config.json` and `step_4000/state.pt`.  From the shared server checkout:
 
 ```bash
 cd /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower

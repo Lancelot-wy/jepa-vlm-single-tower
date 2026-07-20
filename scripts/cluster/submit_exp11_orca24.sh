@@ -46,7 +46,7 @@ if [[ "$RESUME" == 1 && "$RUN_ID_EXPLICIT" != 1 ]]; then die "--resume requires 
 
 echo "[submit-exp11] revision=${HEAD} run_id=${RUN_ID} attempt=${ATTEMPT_ID}"
 echo "[submit-exp11] reused_control=${CONTROL_DIR} declared_control_world=${CONTROL_WORLD_SIZE}"
-echo "[submit-exp11] 24 Workers x 4 L40S; 3 new arms x 32 GPUs; 1000 updates; 4-arm eval then auto-release"
+echo "[submit-exp11] 24 Workers x 4 L40S; 3 new arms x 32 GPUs; 4000 updates; 4-arm eval then auto-release"
 TMP_YAML="$(mktemp "${TMPDIR:-/tmp}/jexp11-orca24.XXXXXX")"
 trap 'rm -f "$TMP_YAML"' EXIT
 sed \

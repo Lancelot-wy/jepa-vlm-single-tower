@@ -1,7 +1,7 @@
 # EXP-11 pilot control: the EXP-10 clean VQA mixture with a frozen ViT.
 # This isolates the effect of the Orca-inspired objective from the effect of
-# freezing its visual teacher.  The 1000-update pilot is sized for an overnight
-# 24-Worker comparison; promote only a passing treatment to a 4000-step run.
+# freezing its visual teacher.  The 4000-update schedule matches the completed
+# Frozen-SFT control and the existing EXP-10 training budget.
 _base_: exp10_curated_sft_s0.yaml
 model:
   mask_variant: v1
@@ -10,8 +10,8 @@ model:
 train:
   train_vision: false
   lambda_reg: 0.0
-  max_steps: 1000
-  warmup_steps: 100
+  max_steps: 4000
+  warmup_steps: 400
   save_every: 250
   log_every: 10
   seed: 0
