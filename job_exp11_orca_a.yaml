@@ -5,7 +5,7 @@
 # Effective batch = 4 samples/GPU * 16 GPUs * grad-accum 2 = 128/update.
 # Trains all four arms to 4000 updates, then rank0 evaluates them on MVBench + TempCompass.
 
-type: jexp11-orca-a
+type: jexp11-orca
 business: VLM-wl01
 subBusiness: mm-general
 image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
