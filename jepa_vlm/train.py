@@ -73,7 +73,10 @@ def build_dataloaders(cfg: Config, tokenizer=None):
 
 def make_optimizer(model, cfg: Config):
     tc = cfg.train
-    new_keys = ("reg_head", "mtp_heads", "mask_embed", "attn_pool", "lora_")
+    new_keys = (
+        "reg_head", "mtp_heads", "mask_embed", "attn_pool", "lora_",
+        "orca_queries", "orca_head",
+    )
     new_params, backbone_params = [], []
     for n, p in model.named_parameters():
         if not p.requires_grad:

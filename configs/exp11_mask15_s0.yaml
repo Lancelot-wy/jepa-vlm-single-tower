@@ -1,0 +1,16 @@
+# EXP-11 secondary arm: run the previously untested low-ratio mask objective.
+# CE always sees the clean video; a separate visual-only view masks 15% of whole
+# frames and predicts their frozen ViT latents.  This avoids train/deploy input
+# mismatch and makes the comparison against exp11_frozen_sft_s0 interpretable.
+_base_: exp11_frozen_sft_s0.yaml
+model:
+  mask_variant: v2.1
+  mask_ratio: 0.15
+  mask_mode: tube
+  mask_tube_max_run: 2
+  dual_view: reg
+  reg_enabled: true
+  mtp_enabled: false
+train:
+  lambda_reg: 0.1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp11_mask15_s0

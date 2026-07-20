@@ -41,6 +41,15 @@ class ModelConfig:
     mtp_enabled: bool = True
     mtp_k: int = 4                     # predict h_{t+1..t+k}
 
+    # --- minimal Orca-inspired observation transition ---
+    # This is intentionally narrower than the full Orca recipe: VQA/CE remains the
+    # main task, while a frozen per-frame visual teacher supervises learnable query
+    # tokens that predict a future visual state.  Event-conditioned training is a
+    # later experiment once timestamped event manifests have been audited.
+    orca_enabled: bool = False
+    orca_query_tokens: int = 4          # one predictive query per pooled target token
+    orca_target_gap: int = 1            # sampled-frame gap; at 2 fps, gap=2 is one second
+
     # --- dual-view training (V4 validation round) ---
     # off: single forward (round-3 behaviour: CE and reg share the masked input)
     # reg: clean view -> CE (input never sees [M]); masked view -> visual-only reg(+mtp).
@@ -178,6 +187,23 @@ def load_config(path: str, overrides: list[str] | None = None) -> Config:
         raise ValueError(f"bad dual_view {cfg.model.dual_view}")
     if cfg.model.dual_view != "off" and cfg.model.mask_variant == "v1":
         raise ValueError("dual_view needs a mask variant (v2.1/v2.2); v1 has no masked view")
-    if not cfg.model.reg_enabled and not cfg.model.mtp_enabled and cfg.model.dual_view != "ce":
-        raise ValueError("reg_enabled=false requires mtp_enabled=true (otherwise no latent loss at all)")
+    if cfg.model.orca_enabled:
+        if cfg.model.mask_variant != "v1":
+            raise ValueError("orca_enabled currently requires mask_variant=v1; test masking in a separate arm")
+        if cfg.model.mtp_enabled or cfg.model.reg_enabled:
+            raise ValueError("orca_enabled is an isolated transition objective; disable legacy reg and MTP")
+        if cfg.model.orca_query_tokens != cfg.model.tokens_per_frame:
+            raise ValueError("orca_query_tokens must equal tokens_per_frame in the pilot")
+        if cfg.model.orca_target_gap < 1 or cfg.model.orca_target_gap >= cfg.train.num_frames:
+            raise ValueError("orca_target_gap must be in [1, num_frames)")
+        if cfg.train.train_vision:
+            raise ValueError("orca_enabled requires train_vision=false so the target encoder is frozen")
+    if (
+        not cfg.model.reg_enabled
+        and not cfg.model.mtp_enabled
+        and not cfg.model.orca_enabled
+        and cfg.model.dual_view != "ce"
+        and cfg.train.lambda_reg != 0
+    ):
+        raise ValueError("nonzero lambda_reg requires a latent objective")
     return cfg

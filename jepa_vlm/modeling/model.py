@@ -114,6 +114,13 @@ class JepaQwen3VL(nn.Module):
 
         self.reg_head = MLPHead(D, mc.reg_head_hidden)
         self.mtp_heads = MTPHeads(D, mc.mtp_k, mc.reg_head_hidden) if mc.mtp_enabled else None
+        if mc.orca_enabled:
+            self.orca_queries = nn.Parameter(torch.empty(mc.orca_query_tokens, D))
+            nn.init.normal_(self.orca_queries, std=0.02)
+            self.orca_head = MLPHead(D, mc.reg_head_hidden)
+        else:
+            self.register_parameter("orca_queries", None)
+            self.orca_head = None
         self.target_norm = nn.LayerNorm(D, elementwise_affine=False)
 
         if mc.bidirectional_visual and mc.mtp_enabled:
@@ -150,6 +157,39 @@ class JepaQwen3VL(nn.Module):
             for feat in out.deepstack_features:
                 deepstack.append(avg_pool_frames(feat.reshape(B, T, Hm, Wm, -1), POOL_SIDE))
         return h, deepstack
+
+    def encode_frames_independently(self, pixel_values: torch.Tensor, grid_thw: torch.Tensor):
+        """Encode each sampled frame as an independent one-frame visual input.
+
+        The normal VQA path intentionally keeps Qwen's native full-video encoder.
+        This teacher path is used only by the Orca-inspired transition objective:
+        current and target states cannot exchange information inside the ViT, and
+        the frozen visual encoder provides a stationary regression target.
+        """
+        B = pixel_values.shape[0]
+        grid_thw = grid_thw.to(pixel_values.device)
+        if grid_thw.ndim > 1:
+            first = grid_thw[0]
+            if not torch.equal(grid_thw, first[None].expand_as(grid_thw)):
+                raise ValueError("independent-frame encoding requires identical grids in a batch")
+            grid_thw = first
+        T, Hp, Wp = (int(x) for x in grid_thw)
+        patches_per_frame = Hp * Wp
+        expected = T * patches_per_frame
+        if pixel_values.shape[1] != expected:
+            raise ValueError(
+                f"pixel/grid mismatch: got {pixel_values.shape[1]} patches, expected {expected}"
+            )
+        per_frame = pixel_values.reshape(B * T, patches_per_frame, pixel_values.shape[-1])
+        one_frame_grids = torch.tensor(
+            [1, Hp, Wp], dtype=grid_thw.dtype, device=grid_thw.device
+        )[None].expand(B * T, -1)
+        out = self.visual(per_frame.reshape(-1, per_frame.shape[-1]), one_frame_grids)
+        Hm, Wm = Hp // 2, Wp // 2
+        merged = out.pooler_output.reshape(B, T, Hm, Wm, -1)
+        if self.pooling == "attn":
+            return self.attn_pool(merged)
+        return avg_pool_frames(merged, POOL_SIDE)
 
     # ------------------------------------------------------------------ mask & embed
     def apply_mask(self, h: torch.Tensor, token_mask: torch.Tensor) -> torch.Tensor:
@@ -197,6 +237,14 @@ class JepaQwen3VL(nn.Module):
         normed_online = self.target_norm(h.float())
         target = normed_online.detach()
 
+        if mc.orca_enabled and not disable_mask:
+            if input_ids is None or labels is None:
+                raise ValueError("orca_enabled is a Phase-B joint CE + transition objective")
+            return self._forward_orca_joint(
+                h, deepstack, pixel_values, grid_thw,
+                input_ids, attention_mask, labels, output_hidden_states,
+            )
+
         use_mask = (mc.mask_variant != "v1") and not disable_mask
         if use_mask and token_mask is None:
             token_mask, _ = sample_token_mask(
@@ -221,6 +269,79 @@ class JepaQwen3VL(nn.Module):
             h_in, deepstack, target, token_mask if use_mask else None,
             input_ids, attention_mask, labels, output_hidden_states, normed_online,
         )
+
+    def _forward_orca_joint(self, h, deepstack, pixel_values, grid_thw,
+                            input_ids, attention_mask, labels, output_hidden_states):
+        """Clean VQA/CE plus a short observation-only predictive-query branch."""
+        out_ce = self._forward_with_text(
+            h, deepstack, self.target_norm(h.float()).detach(), None,
+            input_ids, attention_mask, labels, output_hidden_states,
+            normed_online=None, compute_reg=False,
+        )
+        # The pilot explicitly freezes the ViT.  no_grad also prevents retaining
+        # an unnecessary second visual graph for the independently encoded states.
+        with torch.no_grad():
+            states = self.encode_frames_independently(pixel_values, grid_thw)
+            target_states = self.target_norm(states.float())
+        transition_loss, transition_metrics = self._orca_transition(states, target_states)
+        # Qwen3-VL already builds per-temporal-unit cu_seqlens, so the native
+        # full-video ViT path should be equivalent to explicitly batching frames
+        # as separate one-frame entries.  Log the invariant instead of assuming
+        # leakage (or assuming its absence) from code inspection alone.
+        native_vs_independent = F.mse_loss(h.detach().float(), states.float())
+        transition_metrics["orca_frame_encoding_mse"] = float(native_vs_independent)
+        lam = self.cfg.train.lambda_reg
+        loss = out_ce.ce_loss + lam * transition_loss
+        metrics = {**(out_ce.metrics or {}), **transition_metrics}
+        metrics["orca_weighted_loss"] = float((lam * transition_loss).detach())
+        return JepaOutput(
+            loss=loss, reg_loss=transition_loss, ce_loss=out_ce.ce_loss,
+            ce_per_sample=out_ce.ce_per_sample, metrics=metrics,
+            hidden_states=out_ce.hidden_states, target=target_states.detach(),
+        )
+
+    def _orca_transition(self, states: torch.Tensor, target_states: torch.Tensor):
+        """Predict a future frozen visual state from one frame plus query tokens.
+
+        Each frame pair is an independent short causal sequence
+        ``[4 current-state tokens, 4 learned query tokens]``.  Query hidden states
+        are projected to the four target-state tokens by a two-layer MLP.
+        """
+        mc = self.cfg.model
+        B, T, P, D = states.shape
+        gap = mc.orca_target_gap
+        n_pairs = B * (T - gap)
+        source = states[:, : T - gap].reshape(n_pairs, P, D).to(self.orca_queries.dtype)
+        source_target = target_states[:, : T - gap].reshape(n_pairs, P, D)
+        target = target_states[:, gap:].reshape(n_pairs, P, D).detach()
+        queries = self.orca_queries[None].expand(n_pairs, -1, -1)
+        inputs = torch.cat([source, queries], dim=1)
+
+        visual_pos = visual_only_position_ids(n_pairs, 1, states.device)
+        query_pos = torch.arange(P, P + mc.orca_query_tokens, device=states.device)
+        query_pos = query_pos[None, None].expand(4, n_pairs, -1)
+        position_ids = torch.cat([visual_pos, query_pos], dim=-1)
+        outputs = self.language_model(
+            inputs_embeds=inputs,
+            position_ids=position_ids,
+            use_cache=False,
+            output_hidden_states=False,
+        )
+        query_hidden = outputs.last_hidden_state[:, P:]
+        pred = self.orca_head(query_hidden).float()
+        loss = F.mse_loss(pred, target)
+        persistence = F.mse_loss(source_target, target)
+        ratio = float(loss.detach() / persistence.clamp_min(1e-8))
+        metrics = {
+            "orca_loss": float(loss.detach()),
+            "orca_persistence_mse": float(persistence.detach()),
+            "orca_persistence_ratio": ratio,
+            "orca_gain_vs_persistence": 1.0 - ratio,
+            "orca_target_std": float(target.std(dim=(0, 1)).mean()),
+            "orca_pred_std": float(pred.detach().std(dim=(0, 1)).mean()),
+            "orca_target_gap": float(gap),
+        }
+        return loss, metrics
 
     def _forward_dual_view(self, h_clean, h_masked, deepstack, target, token_mask,
                            input_ids, attention_mask, labels, output_hidden_states,
@@ -371,7 +492,7 @@ class JepaQwen3VL(nn.Module):
     def _compute_losses(self, hidden, target, token_mask, normed_online=None):
         mc = self.cfg.model
         B, T, P, D = hidden.shape
-        pred = self.reg_head(hidden).float()
+        pred = self.reg_head(hidden).float() if mc.reg_enabled else None
 
         if not mc.reg_enabled:
             reg_loss = None
@@ -468,6 +589,7 @@ class JepaQwen3VL(nn.Module):
             out["mtp_persistence_mse"] = float(F.mse_loss(a, b))
 
         if token_mask is not None:
+            out["mask_fraction"] = float(token_mask.float().mean())
             frame_masked = token_mask.all(dim=-1)  # (B, T)
             errs = []
             for bi in range(B):

@@ -1,0 +1,17 @@
+# EXP-11 primary arm: minimal Orca-inspired observation-state prediction.
+#
+# Kept from Orca: frozen visual targets, learnable predictive queries, a two-layer
+# latent head, and joint VQA/CE.  Deliberately not copied yet: event-conditioned
+# prediction and the paper's large three-way data mixture.  At the existing 2 fps,
+# gap=2 asks the model to predict a state one second into the future.
+_base_: exp11_frozen_sft_s0.yaml
+model:
+  mask_variant: v1
+  reg_enabled: false
+  mtp_enabled: false
+  orca_enabled: true
+  orca_query_tokens: 4
+  orca_target_gap: 2
+train:
+  lambda_reg: 0.1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp11_orca_obs_s0
