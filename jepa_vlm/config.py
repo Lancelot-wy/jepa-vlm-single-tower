@@ -47,6 +47,7 @@ class ModelConfig:
     # tokens that predict a future visual state.  Event-conditioned training is a
     # later experiment once timestamped event manifests have been audited.
     orca_enabled: bool = False
+    orca_use_queries: bool = True       # false = matched no-query ablation
     orca_query_tokens: int = 4          # one predictive query per pooled target token
     orca_target_gap: int = 1            # sampled-frame gap; at 2 fps, gap=2 is one second
 
@@ -192,7 +193,7 @@ def load_config(path: str, overrides: list[str] | None = None) -> Config:
             raise ValueError("orca_enabled currently requires mask_variant=v1; test masking in a separate arm")
         if cfg.model.mtp_enabled or cfg.model.reg_enabled:
             raise ValueError("orca_enabled is an isolated transition objective; disable legacy reg and MTP")
-        if cfg.model.orca_query_tokens != cfg.model.tokens_per_frame:
+        if cfg.model.orca_use_queries and cfg.model.orca_query_tokens != cfg.model.tokens_per_frame:
             raise ValueError("orca_query_tokens must equal tokens_per_frame in the pilot")
         if cfg.model.orca_target_gap < 1 or cfg.model.orca_target_gap >= cfg.train.num_frames:
             raise ValueError("orca_target_gap must be in [1, num_frames)")

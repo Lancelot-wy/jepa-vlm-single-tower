@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# EXP-11 overnight pilot: frozen-SFT control, 15% mask, minimal Orca observation loss.
+# EXP-11 overnight pilot: reuse a validated frozen-SFT control, then train
+# 15% mask, Orca without queries, and Orca with queries.
 # Stages: preflight | smoke | train | eval
 
 set -euo pipefail
@@ -17,12 +18,17 @@ CLEAN_QA="${DATA_ROOT}/qa_train_clean.jsonl"
 GRAD_ACCUM="${GRAD_ACCUM:-1}"
 MAX_STEPS="${EXP11_MAX_STEPS:-1000}"
 SAVE_EVERY="${EXP11_SAVE_EVERY:-250}"
+CONTROL_ARM="exp11_frozen_sft_s0"
+CONTROL_DIR="${EXP11_CONTROL_DIR:-${BASE}/outputs/${CONTROL_ARM}}"
+CONTROL_WORLD_SIZE="${EXP11_CONTROL_WORLD_SIZE:-32}"
+CONTROL_DEEP_GATE="${EXP11_CONTROL_DEEP_GATE:-1}"
 
 ARMS=(
-  exp11_frozen_sft_s0
   exp11_mask15_s0
+  exp11_orca_noquery_s0
   exp11_orca_obs_s0
 )
+EVAL_ARMS=("$CONTROL_ARM" "${ARMS[@]}")
 
 die() { echo "[direct-exp11] ERROR: $*" >&2; exit 1; }
 info() { echo "[direct-exp11] $*"; }
@@ -39,21 +45,136 @@ preflight() {
   load_env
   [[ "$MAX_STEPS" =~ ^[1-9][0-9]*$ ]] || die "EXP11_MAX_STEPS must be positive"
   [[ "$SAVE_EVERY" =~ ^[1-9][0-9]*$ ]] || die "EXP11_SAVE_EVERY must be positive"
+  [[ "$CONTROL_WORLD_SIZE" =~ ^[1-9][0-9]*$ ]] || die "EXP11_CONTROL_WORLD_SIZE must be positive"
+  [[ "$CONTROL_DEEP_GATE" =~ ^[01]$ ]] || die "EXP11_CONTROL_DEEP_GATE must be 0 or 1"
   [[ -d "$MODEL_ROOT" ]] || die "model missing: $MODEL_ROOT"
   [[ -s "$CLEAN_QA" ]] || die "clean EXP-10 manifest missing: $CLEAN_QA (run EXP-10 prep first)"
   [[ -f "$MVB" && -f "$TC" ]] || die "MVBench/TempCompass manifest missing"
+  [[ -f "$CONTROL_DIR/config.json" ]] || die "reused Frozen-SFT config missing: $CONTROL_DIR/config.json"
+  [[ -f "$CONTROL_DIR/step_${MAX_STEPS}/state.pt" ]] || \
+    die "reused Frozen-SFT checkpoint missing: $CONTROL_DIR/step_${MAX_STEPS}/state.pt"
   local gpu_count
   gpu_count="$(nvidia-smi -L 2>/dev/null | grep -c '^GPU ' || true)"
   [[ "$gpu_count" == 4 ]] || die "expected exactly 4 visible GPUs, found $gpu_count"
   mkdir -p "$OUTPUT_ROOT" "$RESULTS_ROOT"
   (
     cd "$PROJECT"
-    "$PY" - "$MAX_STEPS" <<'PY'
+    "$PY" - "$MAX_STEPS" "$CONTROL_DIR" "$CONTROL_WORLD_SIZE" "$CLEAN_QA" "$CONTROL_DEEP_GATE" "$RESULTS_ROOT" <<'PY'
+import glob
+import hashlib
+import json
+import os
+import re
 import sys
 from jepa_vlm.config import load_config
 
 expected_steps = int(sys.argv[1])
-names = ("exp11_frozen_sft_s0", "exp11_mask15_s0", "exp11_orca_obs_s0")
+control_dir, control_world, clean_qa = sys.argv[2], int(sys.argv[3]), sys.argv[4]
+deep_gate, results_root = bool(int(sys.argv[5])), sys.argv[6]
+if expected_steps != 1000:
+    raise SystemExit("reused EXP-11 control is defined at exactly 1000 optimizer updates")
+
+expected = load_config(
+    "configs/exp11_frozen_sft_s0.yaml",
+    [f"train.max_steps={expected_steps}", f"train.warmup_steps={expected_steps // 10}"],
+)
+actual = load_config(os.path.join(control_dir, "config.json"))
+
+# Compare every modeling and scientific training field.  Operational fields do
+# not affect the learned model and may legitimately differ across launchers.
+ignored_train = {
+    "grad_accum", "num_workers", "log_every", "save_every", "eval_every",
+    "eval_batches", "output_dir", "resume",
+}
+actual_dict = json.loads(json.dumps(actual.to_dict()))
+expected_dict = json.loads(json.dumps(expected.to_dict()))
+for key, expected_value in expected_dict["model"].items():
+    actual_value = actual_dict["model"].get(key)
+    if actual_value != expected_value:
+        raise SystemExit(
+            f"Frozen-SFT model config mismatch at {key}: "
+            f"actual={actual_value!r}, expected={expected_value!r}"
+        )
+for key in actual.train.__dataclass_fields__:
+    if key not in ignored_train and getattr(actual.train, key) != getattr(expected.train, key):
+        raise SystemExit(
+            f"Frozen-SFT train config mismatch at {key}: "
+            f"actual={getattr(actual.train, key)!r}, expected={getattr(expected.train, key)!r}"
+        )
+if actual.train.text_manifest != clean_qa:
+    raise SystemExit(
+        f"Frozen-SFT data differs: actual={actual.train.text_manifest}, expected={clean_qa}"
+    )
+effective_batch = actual.train.batch_size * actual.train.grad_accum * control_world
+if effective_batch != 128:
+    raise SystemExit(
+        "Frozen-SFT effective batch mismatch: "
+        f"batch={actual.train.batch_size} * accum={actual.train.grad_accum} * "
+        f"declared_world={control_world} = {effective_batch}, expected 128"
+    )
+
+state_path = os.path.join(control_dir, f"step_{expected_steps}", "state.pt")
+if os.path.getmtime(clean_qa) > os.path.getmtime(state_path):
+    raise SystemExit(
+        "clean manifest is newer than the reused checkpoint, so identical training data cannot be established"
+    )
+
+# Platform rank 0 performs the expensive checkpoint read and manifest digest
+# once.  When launcher logs are present, it also verifies the declared DDP world.
+if deep_gate:
+    import torch
+
+    state = torch.load(state_path, map_location="cpu", weights_only=False)
+    if state.get("step_unit") != "optimizer_update" or state.get("step") != expected_steps:
+        raise SystemExit(
+            f"Frozen-SFT checkpoint is not optimizer update {expected_steps}: "
+            f"step={state.get('step')} unit={state.get('step_unit')}"
+        )
+    with open(os.path.join(control_dir, "config.json")) as f:
+        raw_config = json.load(f)
+    checkpoint_config = json.loads(json.dumps(state.get("config")))
+    if checkpoint_config != raw_config:
+        raise SystemExit("Frozen-SFT config.json does not match the config embedded in its checkpoint")
+
+    observed_worlds = set()
+    for path in glob.glob(os.path.join(control_dir, "launcher*.log")):
+        with open(path, errors="replace") as f:
+            for match in re.finditer(r"\bworld=(\d+)\b", f.read()):
+                observed_worlds.add(int(match.group(1)))
+    if observed_worlds and observed_worlds != {control_world}:
+        raise SystemExit(
+            f"Frozen-SFT launcher world mismatch: logs={sorted(observed_worlds)}, "
+            f"declared={control_world}"
+        )
+
+    sha = hashlib.sha256()
+    with open(clean_qa, "rb") as f:
+        for chunk in iter(lambda: f.read(8 << 20), b""):
+            sha.update(chunk)
+    validation = {
+        "control_dir": control_dir,
+        "checkpoint": state_path,
+        "checkpoint_step": expected_steps,
+        "control_world_size": control_world,
+        "effective_batch": effective_batch,
+        "text_manifest": clean_qa,
+        "manifest_sha256": sha.hexdigest(),
+        "launcher_worlds": sorted(observed_worlds),
+    }
+    validation_path = os.path.join(results_root, "control_validation.json")
+    tmp_validation_path = validation_path + ".tmp"
+    with open(tmp_validation_path, "w") as f:
+        json.dump(validation, f, indent=2)
+    os.replace(tmp_validation_path, validation_path)
+    print(
+        "reused-control deep gate passed: "
+        f"checkpoint={state_path} world={control_world} effective_batch={effective_batch} "
+        f"manifest_sha256={sha.hexdigest()} launcher_worlds={sorted(observed_worlds) or 'not-recorded'}"
+    )
+else:
+    print("reused-control lightweight gate passed (deep checkpoint gate already completed by platform rank 0)")
+
+names = ("exp11_mask15_s0", "exp11_orca_noquery_s0", "exp11_orca_obs_s0")
 for name in names:
     c = load_config(f"configs/{name}.yaml", [f"train.max_steps={expected_steps}"])
     if c.train.sample_fps != 2.0 or c.train.num_frames != 16:
@@ -63,11 +184,12 @@ for name in names:
     print(
         f"{name:26s} mask={c.model.mask_variant}:{c.model.mask_ratio} "
         f"dual={c.model.dual_view} orca={c.model.orca_enabled} "
-        f"gap={c.model.orca_target_gap} lambda={c.train.lambda_reg} steps={c.train.max_steps}"
+        f"queries={c.model.orca_use_queries} gap={c.model.orca_target_gap} "
+        f"lambda={c.train.lambda_reg} steps={c.train.max_steps}"
     )
 PY
   )
-  info "preflight passed: ${NPROC_PER_NODE} GPU/node * ${NNODES} nodes * batch 4 * accum ${GRAD_ACCUM} = $((NPROC_PER_NODE * NNODES * 4 * GRAD_ACCUM)) samples/update; checkpoints every ${SAVE_EVERY} updates"
+  info "preflight passed: reused control=${CONTROL_DIR}; new arms use ${NPROC_PER_NODE} GPU/node * ${NNODES} nodes * batch 4 * accum ${GRAD_ACCUM} = $((NPROC_PER_NODE * NNODES * 4 * GRAD_ACCUM)) samples/update; checkpoints every ${SAVE_EVERY} updates"
 }
 
 run_smoke() {
@@ -99,7 +221,7 @@ if arm == "exp11_mask15_s0":
     frac = row.get("mask_fraction")
     if "reg_loss" not in row or frac is None or not 0.10 <= frac <= 0.20:
         raise SystemExit(f"{arm}: invalid mask smoke metrics: {row}")
-if arm == "exp11_orca_obs_s0":
+if arm in ("exp11_orca_noquery_s0", "exp11_orca_obs_s0"):
     required = ("orca_loss", "orca_persistence_mse", "orca_persistence_ratio",
                 "orca_target_std", "orca_pred_std", "orca_frame_encoding_mse")
     if any(k not in row or not math.isfinite(row[k]) for k in required):
@@ -110,6 +232,11 @@ if arm == "exp11_orca_obs_s0":
         raise SystemExit(
             f"{arm}: native and explicit per-frame encodings differ: "
             f"{row['orca_frame_encoding_mse']}"
+        )
+    expected_queries = 0.0 if arm == "exp11_orca_noquery_s0" else 1.0
+    if row.get("orca_use_queries") != expected_queries:
+        raise SystemExit(
+            f"{arm}: wrong query ablation flag: {row.get('orca_use_queries')}"
         )
 print(f"{arm}: smoke metric gate passed")
 PY
@@ -182,7 +309,9 @@ run_training() {
 }
 
 eval_arm() {
-  local arm="$1" gpu="$2" out="${OUTPUT_ROOT}/$1" ckpt="${OUTPUT_ROOT}/$1/step_${MAX_STEPS}"
+  local arm="$1" gpu="$2" out ckpt
+  if [[ "$arm" == "$CONTROL_ARM" ]]; then out="$CONTROL_DIR"; else out="${OUTPUT_ROOT}/$arm"; fi
+  ckpt="${out}/step_${MAX_STEPS}"
   (
     cd "$PROJECT"
     CUDA_VISIBLE_DEVICES="$gpu" "$PY" -m jepa_vlm.probes.mcq_eval --config "$out/config.json" \
@@ -195,20 +324,25 @@ eval_arm() {
 run_eval() {
   load_env; mkdir -p "$RESULTS_ROOT"
   local pids=() arm gpu=0 pid failed=0
-  for arm in "${ARMS[@]}"; do eval_arm "$arm" "$gpu" & pids+=("$!"); gpu=$((gpu + 1)); done
+  for arm in "${EVAL_ARMS[@]}"; do eval_arm "$arm" "$gpu" & pids+=("$!"); gpu=$((gpu + 1)); done
   for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
   (( failed == 0 )) || die "evaluation failed; inspect ${RESULTS_ROOT}/*.eval.log"
-  "$PY" - "$RESULTS_ROOT" "$OUTPUT_ROOT" "$MAX_STEPS" "${ARMS[@]}" <<'PY' | tee "$RESULTS_ROOT/scorecard.txt"
+  "$PY" - "$RESULTS_ROOT" "$OUTPUT_ROOT" "$CONTROL_DIR" "$MAX_STEPS" "${EVAL_ARMS[@]}" <<'PY' | tee "$RESULTS_ROOT/scorecard.txt"
 import json, os, sys
-root, outputs, max_steps, *arms = sys.argv[1:]
+root, outputs, control_dir, max_steps, *arms = sys.argv[1:]
 summary = {"max_steps": int(max_steps), "arms": {}}
+validation_path = os.path.join(root, "control_validation.json")
+if os.path.exists(validation_path):
+    with open(validation_path) as f:
+        summary["control_validation"] = json.load(f)
 for arm in arms:
     row = {}
     for bench in ("mvbench", "tempcompass"):
         with open(os.path.join(root, f"{arm}_{bench}.json")) as f:
             d = json.load(f)
         row[bench] = {k: d[k] for k in ("acc", "correct", "total", "skipped")}
-    log_path = os.path.join(outputs, arm, "log.jsonl")
+    arm_output = control_dir if arm == "exp11_frozen_sft_s0" else os.path.join(outputs, arm)
+    log_path = os.path.join(arm_output, "log.jsonl")
     last = {}
     if os.path.exists(log_path):
         for line in open(log_path):
@@ -219,7 +353,7 @@ for arm in arms:
         "loss", "ce_loss", "reg_loss", "orca_loss", "orca_weighted_loss",
         "orca_persistence_mse", "orca_persistence_ratio", "orca_gain_vs_persistence",
         "orca_target_std", "orca_pred_std", "orca_frame_encoding_mse",
-        "target_std", "copy_mse", "mask_fraction"
+        "orca_use_queries", "target_std", "copy_mse", "mask_fraction"
     ) if k in last}
     summary["arms"][arm] = row
 control = summary["arms"]["exp11_frozen_sft_s0"]

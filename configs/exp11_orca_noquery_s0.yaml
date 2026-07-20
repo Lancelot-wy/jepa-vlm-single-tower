@@ -1,0 +1,9 @@
+# Matched Orca ablation: frozen independent-frame states and the same two-layer
+# predictor as the primary arm, but no learnable query tokens.  The predictor
+# reads the current-frame token hidden states directly.  Comparing this arm with
+# exp11_orca_obs_s0 isolates the value of the query interface.
+_base_: exp11_orca_obs_s0.yaml
+model:
+  orca_use_queries: false
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp11_orca_noquery_s0

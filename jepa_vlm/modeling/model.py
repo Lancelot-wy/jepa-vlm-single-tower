@@ -115,8 +115,11 @@ class JepaQwen3VL(nn.Module):
         self.reg_head = MLPHead(D, mc.reg_head_hidden)
         self.mtp_heads = MTPHeads(D, mc.mtp_k, mc.reg_head_hidden) if mc.mtp_enabled else None
         if mc.orca_enabled:
-            self.orca_queries = nn.Parameter(torch.empty(mc.orca_query_tokens, D))
-            nn.init.normal_(self.orca_queries, std=0.02)
+            if mc.orca_use_queries:
+                self.orca_queries = nn.Parameter(torch.empty(mc.orca_query_tokens, D))
+                nn.init.normal_(self.orca_queries, std=0.02)
+            else:
+                self.register_parameter("orca_queries", None)
             self.orca_head = MLPHead(D, mc.reg_head_hidden)
         else:
             self.register_parameter("orca_queries", None)
@@ -311,24 +314,28 @@ class JepaQwen3VL(nn.Module):
         B, T, P, D = states.shape
         gap = mc.orca_target_gap
         n_pairs = B * (T - gap)
-        source = states[:, : T - gap].reshape(n_pairs, P, D).to(self.orca_queries.dtype)
+        source = states[:, : T - gap].reshape(n_pairs, P, D)
         source_target = target_states[:, : T - gap].reshape(n_pairs, P, D)
         target = target_states[:, gap:].reshape(n_pairs, P, D).detach()
-        queries = self.orca_queries[None].expand(n_pairs, -1, -1)
-        inputs = torch.cat([source, queries], dim=1)
-
         visual_pos = visual_only_position_ids(n_pairs, 1, states.device)
-        query_pos = torch.arange(P, P + mc.orca_query_tokens, device=states.device)
-        query_pos = query_pos[None, None].expand(4, n_pairs, -1)
-        position_ids = torch.cat([visual_pos, query_pos], dim=-1)
+        if mc.orca_use_queries:
+            source = source.to(self.orca_queries.dtype)
+            queries = self.orca_queries[None].expand(n_pairs, -1, -1)
+            inputs = torch.cat([source, queries], dim=1)
+            query_pos = torch.arange(P, P + mc.orca_query_tokens, device=states.device)
+            query_pos = query_pos[None, None].expand(4, n_pairs, -1)
+            position_ids = torch.cat([visual_pos, query_pos], dim=-1)
+        else:
+            inputs = source.to(self.orca_head.net[0].weight.dtype)
+            position_ids = visual_pos
         outputs = self.language_model(
             inputs_embeds=inputs,
             position_ids=position_ids,
             use_cache=False,
             output_hidden_states=False,
         )
-        query_hidden = outputs.last_hidden_state[:, P:]
-        pred = self.orca_head(query_hidden).float()
+        pred_hidden = outputs.last_hidden_state[:, P:] if mc.orca_use_queries else outputs.last_hidden_state
+        pred = self.orca_head(pred_hidden).float()
         loss = F.mse_loss(pred, target)
         persistence = F.mse_loss(source_target, target)
         ratio = float(loss.detach() / persistence.clamp_min(1e-8))
@@ -340,6 +347,7 @@ class JepaQwen3VL(nn.Module):
             "orca_target_std": float(target.std(dim=(0, 1)).mean()),
             "orca_pred_std": float(pred.detach().std(dim=(0, 1)).mean()),
             "orca_target_gap": float(gap),
+            "orca_use_queries": float(mc.orca_use_queries),
         }
         return loss, metrics
 
