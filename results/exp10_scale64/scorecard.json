@@ -1,0 +1,58 @@
+{
+  "exp10_curated_sft_s0": {
+    "mvbench": {
+      "acc": 0.49361702127659574,
+      "correct": 1972,
+      "total": 3995,
+      "skipped": 5
+    },
+    "tempcompass": {
+      "acc": 0.5708860759493671,
+      "correct": 902,
+      "total": 1580,
+      "skipped": 5960
+    }
+  },
+  "exp10_curated_mse_s0": {
+    "mvbench": {
+      "acc": 0.49411764705882355,
+      "correct": 1974,
+      "total": 3995,
+      "skipped": 5
+    },
+    "tempcompass": {
+      "acc": 0.5658227848101266,
+      "correct": 894,
+      "total": 1580,
+      "skipped": 5960
+    }
+  },
+  "exp10_curated_sft_s1": {
+    "mvbench": {
+      "acc": 0.49036295369211513,
+      "correct": 1959,
+      "total": 3995,
+      "skipped": 5
+    },
+    "tempcompass": {
+      "acc": 0.5746835443037974,
+      "correct": 908,
+      "total": 1580,
+      "skipped": 5960
+    }
+  },
+  "exp10_curated_mse_s1": {
+    "mvbench": {
+      "acc": 0.4921151439299124,
+      "correct": 1966,
+      "total": 3995,
+      "skipped": 5
+    },
+    "tempcompass": {
+      "acc": 0.5677215189873418,
+      "correct": 897,
+      "total": 1580,
+      "skipped": 5960
+    }
+  }
+}
