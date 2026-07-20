@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# 24-Worker EXP-11 entrypoint: three new independent 8-node / 32-GPU DDP
-# groups, plus one already-trained Frozen-SFT checkpoint reused for evaluation.
+# EXP-11 entrypoint: N independent DDP groups, one per arm named in EXP11_ARMS.
+# Each group trains a frozen-ViT arm to EXP11_MAX_STEPS updates; rank 0 runs the
+# shared data/smoke gates and, once every arm in this job has a final checkpoint,
+# evaluates them all on MVBench + TempCompass.
 
 set -Eeuo pipefail
 
@@ -13,10 +15,9 @@ GRAD_ACCUM="${EXP11_GRAD_ACCUM:-1}"
 NUM_WORKERS="${EXP11_NUM_WORKERS:-2}"
 MAX_STEPS="${EXP11_MAX_STEPS:-4000}"
 SAVE_EVERY="${EXP11_SAVE_EVERY:-250}"
-WAIT_TIMEOUT_SEC="${EXP11_WAIT_TIMEOUT_SEC:-86400}"
-CONTROL_DIR="${EXP11_CONTROL_DIR:-/data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp11_frozen_sft_s0}"
-CONTROL_WORLD_SIZE="${EXP11_CONTROL_WORLD_SIZE:-32}"
-ARMS=(exp11_mask15_s0 exp11_orca_noquery_s0 exp11_orca_obs_s0)
+WAIT_TIMEOUT_SEC="${EXP11_WAIT_TIMEOUT_SEC:-172800}"
+ARMS_CSV="${EXP11_ARMS:-exp11_frozen_sft_s0,exp11_mask15_s0,exp11_orca_noquery_s0,exp11_orca_obs_s0}"
+IFS=',' read -r -a ARMS <<< "$ARMS_CSV"
 COORD_DIR=""
 
 record_failure() {
@@ -36,12 +37,12 @@ for value_name in RUN_ID ATTEMPT_ID; do
   value="${!value_name}"
   [[ "$value" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || die "$value_name must be a short safe identifier"
 done
-for value_name in NODES_PER_ARM GRAD_ACCUM MAX_STEPS SAVE_EVERY CONTROL_WORLD_SIZE; do
+for value_name in NODES_PER_ARM GRAD_ACCUM MAX_STEPS SAVE_EVERY; do
   value="${!value_name}"
   [[ "$value" =~ ^[1-9][0-9]*$ ]] || die "$value_name must be positive"
 done
 [[ "$NUM_WORKERS" =~ ^[0-9]+$ ]] || die "NUM_WORKERS must be nonnegative"
-[[ "$CONTROL_DIR" == /* ]] || die "EXP11_CONTROL_DIR must be an absolute path"
+[[ "${#ARMS[@]}" -ge 1 ]] || die "EXP11_ARMS is empty"
 
 EFFECTIVE_BATCH=$((4 * 4 * NODES_PER_ARM * GRAD_ACCUM))
 [[ "$EFFECTIVE_BATCH" == "128" ]] || die "expected effective batch 128, got ${EFFECTIVE_BATCH}"
@@ -77,8 +78,8 @@ export GRAD_ACCUM
 export TRAIN_NPROC_PER_NODE=4 TRAIN_NNODES="$NODES_PER_ARM"
 export TRAIN_NODE_RANK="$GROUP_RANK" TRAIN_MASTER_ADDR="$GROUP_MASTER"
 export TRAIN_EXTRA_OVERRIDES="train.num_workers=${NUM_WORKERS}"
+export EXP11_ARMS="$ARMS_CSV" EXP11_NODES_PER_ARM="$NODES_PER_ARM"
 export EXP11_MAX_STEPS="$MAX_STEPS" EXP11_SAVE_EVERY="$SAVE_EVERY" RESUME
-export EXP11_CONTROL_DIR="$CONTROL_DIR" EXP11_CONTROL_WORLD_SIZE="$CONTROL_WORLD_SIZE"
 
 RUN_ROOT="${CLUSTER_BASE}/runs/exp11_orca/${RUN_ID}"
 COORD_DIR="${RUN_ROOT}/coord/${ATTEMPT_ID}"
@@ -89,7 +90,7 @@ LOG_FILE="${LOG_DIR}/rank${PLATFORM_RANK}.log"
 
 gpu_count="$(nvidia-smi -L 2>/dev/null | grep -c '^GPU ' || true)"
 [[ "$gpu_count" == 4 ]] || die "each Worker must expose 4 GPUs, found ${gpu_count}"
-echo "[job-exp11] host=$(hostname) rank=${PLATFORM_RANK} group=${GROUP_ID}:${GROUP_RANK} arm=${ARM} world=$((NODES_PER_ARM * 4)) batch=${EFFECTIVE_BATCH} steps=${MAX_STEPS} run=${RUN_ID}"
+echo "[job-exp11] host=$(hostname) rank=${PLATFORM_RANK} group=${GROUP_ID}:${GROUP_RANK} arm=${ARM} arms=[${ARMS_CSV}] world=$((NODES_PER_ARM * 4)) batch=${EFFECTIVE_BATCH} steps=${MAX_STEPS} run=${RUN_ID}"
 
 run_stage() {
   local label="$1"; shift
@@ -113,18 +114,18 @@ if [[ "$PLATFORM_RANK" == 0 ]]; then
   # Reuse the already audited/fingerprinted EXP-10 four-source manifest builder.
   run_stage data_prep bash scripts/direct/run_exp10_curated_4gpu.sh prep
   run_stage exp11_preflight bash scripts/direct/run_exp11_orca_pilot.sh preflight
-  run_stage smoke env EXP11_CONTROL_DEEP_GATE=0 bash scripts/direct/run_exp11_orca_pilot.sh smoke
+  run_stage smoke bash scripts/direct/run_exp11_orca_pilot.sh smoke
   touch "$COORD_DIR/gates_ready"
 else
-  wait_for_marker "$COORD_DIR/gates_ready" "data gates and three-arm smoke"
+  wait_for_marker "$COORD_DIR/gates_ready" "data gates and arm smoke"
 fi
 
-run_stage "train_${ARM}" env EXP11_CONTROL_DEEP_GATE=0 ONLY_ARM="$ARM" bash scripts/direct/run_exp11_orca_pilot.sh train
+run_stage "train_${ARM}" env ONLY_ARM="$ARM" bash scripts/direct/run_exp11_orca_pilot.sh train
 if [[ "$GROUP_RANK" == 0 ]]; then touch "$COORD_DIR/${ARM}.done"; fi
 
 if [[ "$PLATFORM_RANK" == 0 ]]; then
   for peer_arm in "${ARMS[@]}"; do wait_for_marker "$COORD_DIR/${peer_arm}.done" "${peer_arm} checkpoint"; done
-  run_stage eval env EXP11_CONTROL_DEEP_GATE=0 bash scripts/direct/run_exp11_orca_pilot.sh eval
+  run_stage eval bash scripts/direct/run_exp11_orca_pilot.sh eval
   touch "$COORD_DIR/completed"
   echo "[job-exp11] training and evaluation complete; exiting to release all Workers"
 fi
