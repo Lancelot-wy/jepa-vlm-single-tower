@@ -45,7 +45,12 @@ done
 [[ "${#ARMS[@]}" -ge 1 ]] || die "EXP11_ARMS is empty"
 
 EFFECTIVE_BATCH=$((4 * 4 * NODES_PER_ARM * GRAD_ACCUM))
-[[ "$EFFECTIVE_BATCH" == "128" ]] || die "expected effective batch 128, got ${EFFECTIVE_BATCH}"
+# Hold 128 when topology allows; Job A uses 15 nodes (3 arms x 5 nodes x GA2)
+# because mm-general only had 15 schedulable nodes, so 160 is permitted there.
+case "$EFFECTIVE_BATCH" in
+  128|160) ;;
+  *) die "expected effective batch 128 or 160, got ${EFFECTIVE_BATCH}" ;;
+esac
 EXPECTED_NNODES=$((NODES_PER_ARM * ${#ARMS[@]}))
 [[ -d "$PROJECT_ROOT" ]] || die "repository missing: $PROJECT_ROOT"
 [[ -n "${TF_CONFIG:-}" ]] || die "vtraining TF_CONFIG is required"
