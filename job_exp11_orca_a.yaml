@@ -1,9 +1,9 @@
-# EXP-11 Job A: 15 Workers / 60 L40S GPUs on the VLM-wl01 queue.
-# Three arms, each a 5-node / 20-GPU DDP group with grad-accum 2:
-#   exp11_frozen_sft_s0 (control) + exp11_mask15_s0 + exp11_orca_obs_s0
-# Effective batch = 4 samples/GPU * 20 GPUs * grad-accum 2 = 160/update.
-# (mm-general had only 15 schedulable nodes; 3 arms x 5 nodes fits, batch 160.)
-# Trains all three arms to 4000 updates, then rank0 evaluates them on MVBench + TempCompass.
+# EXP-11 Job A: 16 Workers / 64 L40S GPUs on the VLM-wl01 queue.
+# Four arms, each a 4-node / 16-GPU DDP group with grad-accum 2:
+#   exp11_frozen_sft_s0 (control) + exp11_mask15_s0
+#   exp11_orca_noquery_s0        + exp11_orca_obs_s0
+# Effective batch = 4 samples/GPU * 16 GPUs * grad-accum 2 = 128/update.
+# Trains all four arms to 4000 updates, then rank0 evaluates them on MVBench + TempCompass.
 
 type: jexp11-orca-a
 business: VLM-wl01
@@ -19,11 +19,11 @@ restartPolicy: Never
 
 run:
   rdma: 'ib'
-  command: "EXP11_RUN_ID=unset EXP11_ATTEMPT_ID=unset EXP11_RESUME=0 EXP11_ARMS=exp11_frozen_sft_s0,exp11_mask15_s0,exp11_orca_obs_s0 EXP11_NODES_PER_ARM=5 EXP11_GRAD_ACCUM=2 EXP11_NUM_WORKERS=3 EXP11_MAX_STEPS=4000 EXP11_SAVE_EVERY=250 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp11_orca24_entry.sh"
+  command: "EXP11_RUN_ID=unset EXP11_ATTEMPT_ID=unset EXP11_RESUME=0 EXP11_ARMS=exp11_frozen_sft_s0,exp11_mask15_s0,exp11_orca_noquery_s0,exp11_orca_obs_s0 EXP11_NODES_PER_ARM=4 EXP11_GRAD_ACCUM=2 EXP11_NUM_WORKERS=4 EXP11_MAX_STEPS=4000 EXP11_SAVE_EVERY=250 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp11_orca24_entry.sh"
 
 spec:
   Worker:
-    num: 15
+    num: 16
     nodes:
       vivo.com/machine-type: 'L40s'
     limits:
