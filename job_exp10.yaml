@@ -24,6 +24,8 @@ dataPaths:
 - /data/vjuicefs_sz_ocr_wl/public_data
 - /data/vjuicefs_ai_ocr_wl/public_data
 - /data/vjuicefs_ai_gpt_vision_wl04/public_data
+# Rank-0 final eval reads MVBench + TempCompass media from here.
+- /data/vjuicefs_ai_gpt_nlp/public_data
 
 tmpfs: true
 restartPolicy: Never
