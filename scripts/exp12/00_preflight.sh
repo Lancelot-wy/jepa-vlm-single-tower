@@ -13,6 +13,10 @@ EXPECTED_COMMIT="${EXP12_GIT_COMMIT:-}"
 die() { echo "[exp12-preflight] ERROR: $*" >&2; exit 1; }
 [[ -d "$PROJECT_ROOT/.git" ]] || die "missing repository: $PROJECT_ROOT"
 cd "$PROJECT_ROOT"
+# `python scripts/exp12/x.py` only puts scripts/exp12/ on sys.path, not the repo
+# root, and the cluster python does not add the CWD. Export the repo root so every
+# python invocation here can `import jepa_vlm`.
+export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 [[ -z "$(git status --porcelain)" ]] || die "checkout must be clean and committed"
 HEAD="$(git rev-parse HEAD)"
 [[ -z "$EXPECTED_COMMIT" || "$HEAD" == "$EXPECTED_COMMIT" ]] || die "HEAD $HEAD != fixed commit $EXPECTED_COMMIT"

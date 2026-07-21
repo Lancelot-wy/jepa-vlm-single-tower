@@ -16,6 +16,10 @@ PROJECT_ROOT="${CLUSTER_BASE}/jepa-vlm-single-tower"
 # conflicts with torch 2.5, so it MUST be cleared.
 export JEPA_ENV="${CLUSTER_BASE}/envs/jepa311"
 export PATH="${JEPA_ENV}/bin:${PATH}"
+# The cluster python does not add the CWD to sys.path, and `python scripts/x.py`
+# only puts scripts/ on the path. Put the repo root on PYTHONPATH so every python
+# invocation (preflight, train, eval, probes) can `import jepa_vlm`.
+export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 unset LD_LIBRARY_PATH
 
 # ---- model / outputs (also referenced by configs/vivolm_ssv2.yaml) ----
