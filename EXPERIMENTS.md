@@ -165,3 +165,35 @@ python -m jepa_vlm.probes.temporal_qa_eval \
 - ckpt 扫描：formal 跑的 2k/4k/6k/8k 档 + 本轮每千步档，画 probe/QA 随步数曲线找退化点。
 - 已知注意事项：joint 臂的 CE 在被 mask 的视频上训练（这是"回归目标包"的一部分）；若怀疑
   mask 本身伤 QA，可加第三臂 r3_joint + mask_ratio=0.25 消融。
+
+# EXP-11：Orca-inspired 目标 @ 冻结 ViT
+
+24-GPU / 3-arm 并行（每臂 8 节点）。EXP-10 已证视觉端训练有贡献，EXP-11 冻结 ViT
+（`train_vision: false`）以隔离 Orca 目标本身的效果。基座 Qwen3-VL-2B-Instruct，
+数据 `exp10_curated/qa_train_clean.jsonl`（与 EXP-10 相同），4000 步、有效 batch 128、
+lr 1e-4、num_frames 16、mask_variant v1、seed 0。
+
+## 实验臂（唯一差异 = 目标/正则）
+
+| 臂 | reg_enabled | mtp_enabled | mask_fraction | 说明 |
+|----|-------------|-------------|---------------|------|
+| exp11_frozen_sft_s0 | false | false | — | 对照：纯 CE |
+| exp11_mask15_s0 | true | false | 0.125 | mask15 回归臂 |
+| exp11_orca_obs_s0 | false | false | — | Orca 观测目标臂 |
+
+## 结果（step_4000，rank0 统一评测）
+
+| 臂 | MVBench | TempCompass |
+|----|---------|-------------|
+| exp11_frozen_sft_s0 | 47.46% | 55.38% |
+| exp11_mask15_s0 | 47.43% | 55.57% |
+| exp11_orca_obs_s0 | 47.26% | **56.33%** |
+
+完整明细（含 TempCompass 分类、EXP-10 合并对比）见 `results/exp11_orca/comparison.md`。
+
+## 判读
+
+- 冻结 ViT 相比 EXP-10（训练 ViT）掉点 ~1.7-1.9%，视觉端训练对这套 VQA 有实质贡献。
+- 三臂 MVBench 打平（差异 <0.2%，噪声内）。
+- orca_obs 在 TempCompass 上最优（56.33%），比同系 frozen_sft 高 +0.95%，主要体现在
+  direction（+1.79%）与 order（+2.64%）两类时序推理。Orca 观测目标对下游时序理解有微弱正向作用。

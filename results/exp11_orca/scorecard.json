@@ -1,0 +1,14 @@
+{
+  "exp11_frozen_sft_s0": {
+    "mvbench": { "acc": 0.47459324155193994, "correct": 1896, "total": 3995 },
+    "tempcompass": { "acc": 0.5537974683544303, "correct": 875, "total": 1580 }
+  },
+  "exp11_mask15_s0": {
+    "mvbench": { "acc": 0.47434292866082606, "correct": 1895, "total": 3995 },
+    "tempcompass": { "acc": 0.5556962025316455, "correct": 878, "total": 1580 }
+  },
+  "exp11_orca_obs_s0": {
+    "mvbench": { "acc": 0.4725907384230288, "correct": 1888, "total": 3995 },
+    "tempcompass": { "acc": 0.5632911392405063, "correct": 890, "total": 1580 }
+  }
+}
