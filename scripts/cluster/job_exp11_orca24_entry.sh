@@ -47,9 +47,10 @@ done
 EFFECTIVE_BATCH=$((4 * 4 * NODES_PER_ARM * GRAD_ACCUM))
 # Hold 128 when topology allows; Job A uses 15 nodes (3 arms x 5 nodes x GA2)
 # because mm-general only had 15 schedulable nodes, so 160 is permitted there.
+# The 24-node layout runs 4 arms x 6 nodes x GA1 = 96, so 96 is permitted too.
 case "$EFFECTIVE_BATCH" in
-  128|160) ;;
-  *) die "expected effective batch 128 or 160, got ${EFFECTIVE_BATCH}" ;;
+  96|128|160) ;;
+  *) die "expected effective batch 96, 128 or 160, got ${EFFECTIVE_BATCH}" ;;
 esac
 EXPECTED_NNODES=$((NODES_PER_ARM * ${#ARMS[@]}))
 [[ -d "$PROJECT_ROOT" ]] || die "repository missing: $PROJECT_ROOT"
