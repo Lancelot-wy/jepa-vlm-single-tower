@@ -54,7 +54,8 @@ preflight() {
   [[ "$GRAD_ACCUM" =~ ^[1-9][0-9]*$ ]] || die "EXP11_GRAD_ACCUM must be a positive integer"
   local world_size=$(( NPROC_PER_NODE * NNODES ))
   local effective_batch=$(( world_size * 4 * GRAD_ACCUM ))
-  [[ "$effective_batch" -eq 128 ]] || die "EXP-11 effective batch must be 128; got ${effective_batch}"
+  # 96 (24-node 4-arm x 6-node), 128 (16-node) and 160 (15-node GA2) layouts are valid.
+  [[ "$effective_batch" =~ ^(96|128|160)$ ]] || die "EXP-11 effective batch must be 96, 128 or 160; got ${effective_batch}"
   cd "$PROJECT"
   "$py" - "$MAX_STEPS" "${ARMS[@]}" <<'PY'
 import sys
