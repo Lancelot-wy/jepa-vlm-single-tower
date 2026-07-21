@@ -28,7 +28,12 @@ fi
 PY="${JEPA_ENV:+${JEPA_ENV}/bin/python}"
 PY="${PY:-$(command -v python3 || true)}"
 [[ -x "$PY" ]] || die "Python unavailable"
-command -v ffmpeg >/dev/null || die "ffmpeg unavailable"
+# Video decode uses the python `av`/`decord` bindings, not the ffmpeg CLI; the
+# training image ships `av` but not the ffmpeg binary. Warn instead of dying on a
+# missing CLI, and keep the hard dependency check on the `av` python module below.
+if ! command -v ffmpeg >/dev/null; then
+  echo "[exp12-preflight] WARN: ffmpeg CLI not on PATH (not used; decode via python av)"
+fi
 command -v nvidia-smi >/dev/null || die "nvidia-smi unavailable"
 GPU_COUNT="$(nvidia-smi -L | grep -c '^GPU ' || true)"
 [[ "$GPU_COUNT" -eq 4 ]] || die "preflight Worker must expose exactly 4 GPUs; found $GPU_COUNT"
