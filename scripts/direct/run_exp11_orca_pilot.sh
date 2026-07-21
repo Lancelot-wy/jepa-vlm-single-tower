@@ -158,7 +158,7 @@ for arm in sys.argv[2:]:
     row = {"arm": arm}
     for bench in ("mvbench", "tempcompass"):
         with open(os.path.join(root, f"{arm}_{bench}.json")) as f:
-            row[bench] = json.load(f)["accuracy"]
+            row[bench] = json.load(f)["acc"]
     rows.append(row)
 for r in rows:
     print(f"{r['arm']:28s} MVBench={r['mvbench']:.4f} TempCompass={r['tempcompass']:.4f}")
