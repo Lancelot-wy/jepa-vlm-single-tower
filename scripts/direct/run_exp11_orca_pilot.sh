@@ -103,7 +103,7 @@ PY
 }
 
 train_arm() {
-  local arm="$1" out="${OUTPUT_ROOT}/${arm}" resume=""
+  local arm="$1" out="${OUTPUT_ROOT}/$1" resume=""
   local final="${out}/step_${MAX_STEPS}"
   if is_final_checkpoint "$final/state.pt"; then
     info "$arm already complete at step_${MAX_STEPS}"
@@ -132,7 +132,7 @@ run_training() {
 }
 
 eval_arm() {
-  local arm="$1" gpu="$2" out="${OUTPUT_ROOT}/${arm}"
+  local arm="$1" gpu="$2" out="${OUTPUT_ROOT}/$1"
   (
     set -euo pipefail
     CUDA_VISIBLE_DEVICES="$gpu" "${JEPA_ENV:-${BASE}/jepa_env}/bin/python" -m jepa_vlm.probes.mcq_eval \
