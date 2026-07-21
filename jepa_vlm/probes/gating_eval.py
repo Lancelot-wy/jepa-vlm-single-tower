@@ -30,6 +30,8 @@ import os
 
 import numpy as np
 import torch
+
+from ..config import resolved_raw_num_frames, resolved_temporal_units, resolved_visual_tokens
 import torch.nn as nn
 
 from ..data.video_io import patchify, resize_center_crop
@@ -42,7 +44,8 @@ from .streaming_eval import (LETTERS, _mcq_texts, decode_prefix_frames,
 @torch.no_grad()
 def video_chunk_latents(model, path: str, t_end: float, chunk_sec: float,
                         frames_per_chunk: int, frame_size: int, duplicate: bool,
-                        device, dtype, cache_dir: str | None = None):
+                        device, dtype, cache_dir: str | None = None,
+                        temporal_patch_size: int = 2):
     """Encode the [0, t_end] prefix as consecutive chunks; return
     (latents (N, D) pooled-mean visual latents, framediff (N,) boundary pixel diff)."""
     key = None
@@ -58,8 +61,10 @@ def video_chunk_latents(model, path: str, t_end: float, chunk_sec: float,
     for ci in range(n_chunks):
         t1 = min((ci + 1) * chunk_sec, t_end)
         frames = decode_prefix_frames(path, t1, frames_per_chunk, "recent", chunk_sec)
-        pv, grid = patchify(resize_center_crop(frames, frame_size), duplicate)
-        h, _ = model.encode_video(pv[None].to(device, dtype=dtype), grid)
+        pv, grid = patchify(
+            resize_center_crop(frames, frame_size), duplicate, temporal_patch_size
+        )
+        h, _, _ = model.encode_video(pv[None].to(device, dtype=dtype), grid)
         lats.append(h.float().mean(dim=(1, 2)).squeeze(0).cpu().numpy())   # (D,)
         cur_first, cur_last = frames[0].astype(np.float32), frames[-1].astype(np.float32)
         fds.append(0.0 if prev_last is None else float(np.abs(cur_first - prev_last).mean()))
@@ -102,9 +107,6 @@ def train_predictor(seqs: list[np.ndarray], epochs: int = 30, device="cuda"):
             tot += float(loss)
             n += 1
         if (ep + 1) % 10 == 0:
-            # copy-last reference on the same sequences
-            cl = float(np.mean([np.mean((x[0, 1:].cpu().numpy() - x[0, :-1].cpu().numpy()) ** 2)
-                                for x in [t[None] for t in [xx[0].cpu() for xx in [x]]]]))
             print(f"  predictor ep{ep + 1}: mse {tot / max(n, 1):.4f}")
     return net
 
@@ -168,7 +170,8 @@ def main():
     def latents_for(video, t_end):
         return video_chunk_latents(model, video, t_end, args.chunk_sec,
                                    args.frames_per_chunk, mc.frame_size,
-                                   mc.duplicate_frames, device, dtype, args.cache)
+                                   mc.duplicate_frames, device, dtype, args.cache,
+                                   tc.temporal_patch_size)
 
     # 1) predictor on train videos
     seqs = []
@@ -193,12 +196,18 @@ def main():
     ids = {k: getattr(model.hf_config, k) for k in
            ("video_token_id", "vision_start_token_id", "vision_end_token_id")}
     collator = QACollator(tokenizer, ids,
-                          tc.num_frames * mc.tokens_per_frame, tc.max_text_len)
+                          resolved_temporal_units(cfg) * resolved_visual_tokens(cfg),
+                          tc.max_text_len)
 
     def score(video, t_anchor, question, options):
-        frames = decode_prefix_frames(video, t_anchor, tc.num_frames, "recent", args.window)
+        frames = decode_prefix_frames(
+            video, t_anchor, resolved_raw_num_frames(cfg), "recent", args.window
+        )
         q, answers = _mcq_texts(question, options)
-        pv, grid = patchify(resize_center_crop(frames, mc.frame_size), mc.duplicate_frames)
+        pv, grid = patchify(
+            resize_center_crop(frames, mc.frame_size), mc.duplicate_frames,
+            tc.temporal_patch_size,
+        )
         batch = collator([{"pixel_values": pv, "grid_thw": grid, "question": q, "answer": a}
                           for a in answers])
         out = model(pixel_values=batch["pixel_values"].to(device, dtype=dtype),

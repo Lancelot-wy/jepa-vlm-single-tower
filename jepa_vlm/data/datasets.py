@@ -94,10 +94,13 @@ class ManifestVideoDataset(Dataset):
         frame_sampling: str = "fps_or_uniform",
         frame_size: int = 256,
         duplicate_frames: bool = True,
+        temporal_patch_size: int = 2,
+        state_horizon_units: int = 1,
         min_flow: float = 0.0,
         training: bool = True,
         temporal_transform: str = "none",
         seed: int = 0,
+        deterministic_order: bool = False,
     ):
         self.items = load_manifest(manifest, min_flow)
         self.data_root = data_root
@@ -106,9 +109,16 @@ class ManifestVideoDataset(Dataset):
         self.frame_sampling = frame_sampling
         self.frame_size = frame_size
         self.duplicate_frames = duplicate_frames
+        self.temporal_patch_size = temporal_patch_size
+        self.state_horizon_units = state_horizon_units
         self.training = training
         self.temporal_transform = temporal_transform
         self.seed = seed
+        self.deterministic_order = deterministic_order
+        self.order = (
+            np.random.default_rng(seed).permutation(len(self.items))
+            if deterministic_order else np.arange(len(self.items))
+        )
 
     def __len__(self):
         return len(self.items)
@@ -141,7 +151,9 @@ class ManifestVideoDataset(Dataset):
         j = i
         for attempt in range(self._MAX_DECODE_RETRIES + 1):
             try:
-                return self._build_sample(j)
+                sample = self._build_sample(j)
+                sample["video_stats"]["decode_retry_count"] = attempt
+                return sample
             except Exception as exc:
                 budget = getattr(self, "_decode_warn_left", 20)
                 if budget > 0:
@@ -151,33 +163,57 @@ class ManifestVideoDataset(Dataset):
         raise RuntimeError(f"decode failed for {self._MAX_DECODE_RETRIES + 1} samples from index {i}")
 
     def _build_sample(self, i: int):
-        it = self.items[i]
+        manifest_i = int(self.order[i])
+        it = self.items[manifest_i]
         # Keep video offset selection reproducible across paired arms.  The
         # DataLoader shuffle order may change, but a manifest row always maps
         # to one deterministic augmentation under a given train seed.
-        rng = np.random.default_rng(self.seed * 100003 + i)
+        rng = np.random.default_rng(self.seed * 100003 + manifest_i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
         with _hard_timeout(self._DECODE_TIMEOUT_SEC):
-            frames = decode_frames(
+            frames, video_stats = decode_frames(
                 path, self.num_frames, self.sample_fps, self.frame_sampling,
                 start=it.get("start"), end=it.get("end"),
                 random_offset=self.training, rng=rng,
+                return_metadata=True, temporal_patch_size=self.temporal_patch_size,
+                state_horizon_units=self.state_horizon_units,
             )
         label = int(it.get("label", -1) if it.get("label") is not None else -1)
         frames, label = self._apply_temporal(frames, rng, label)
         pixel_values, grid = patchify(
-            resize_center_crop(frames, self.frame_size), self.duplicate_frames
+            resize_center_crop(frames, self.frame_size), self.duplicate_frames,
+            self.temporal_patch_size,
         )
-        return {"pixel_values": pixel_values, "grid_thw": grid, "label": label, "index": i}
+        video_stats["state_eligible"] = bool(
+            video_stats["state_eligible"] and not self.duplicate_frames
+        )
+        video_stats["state_skipped_short"] = not video_stats["state_eligible"]
+        video_stats["state_skipped_temporal_augmentation"] = False
+        return {"pixel_values": pixel_values, "grid_thw": grid, "label": label,
+                "index": manifest_i, "video_stats": video_stats}
 
 
 def collate_visual(batch: list[dict]) -> dict:
-    return {
+    out = {
         "pixel_values": torch.stack([b["pixel_values"] for b in batch]),
         "grid_thw": batch[0]["grid_thw"],
         "labels_cls": torch.tensor([b["label"] for b in batch], dtype=torch.long),
         "indices": torch.tensor([b["index"] for b in batch], dtype=torch.long),
     }
+    if batch and "video_stats" in batch[0]:
+        out["state_eligible"] = torch.tensor(
+            [bool(b["video_stats"]["state_eligible"]) for b in batch], dtype=torch.bool
+        )
+        out["video_stats"] = {
+            key: torch.tensor([float(b["video_stats"][key]) for b in batch], dtype=torch.float32)
+            for key in (
+                "raw_frame_count", "unique_frame_count", "temporal_unit_count",
+                "duplicate_adjacent_ratio", "effective_fps", "state_skipped_short",
+                "state_skipped_temporal_augmentation",
+                "nearest_frame_substitutions", "decode_retry_count",
+            )
+        }
+    return out
 
 
 # ---------------------------------------------------------------------- Phase B
@@ -258,10 +294,11 @@ class QAVideoDataset(ManifestVideoDataset):
         return frames, q, ("(B) right" if right else "(A) left")
 
     def _build_sample(self, i: int):
-        it = self.items[i]
+        manifest_i = int(self.order[i])
+        it = self.items[manifest_i]
         # Do not use default_rng(None) here: it draws OS entropy independently
         # in CE and MTP arms, invalidating a same-seed paired comparison.
-        rng = np.random.default_rng(self.seed * 100003 + i)
+        rng = np.random.default_rng(self.seed * 100003 + manifest_i)
         path = os.path.join(self.data_root, it["video"]) if self.data_root else it["video"]
 
         # 先选模板再解码（speed 模板需要改采样帧率：帧距 x2 = 2 倍速）
@@ -279,10 +316,12 @@ class QAVideoDataset(ManifestVideoDataset):
                 fps = self.sample_fps / 2.0
 
         with _hard_timeout(self._DECODE_TIMEOUT_SEC):
-            frames = decode_frames(
+            frames, video_stats = decode_frames(
                 path, self.num_frames, fps, self.frame_sampling,
                 start=it.get("start"), end=it.get("end"),
                 random_offset=self.training, rng=rng,
+                return_metadata=True, temporal_patch_size=self.temporal_patch_size,
+                state_horizon_units=self.state_horizon_units,
             )
 
         if template is None:
@@ -299,10 +338,21 @@ class QAVideoDataset(ManifestVideoDataset):
             frames, question, answer = self._tpl_pan(frames, rng)
 
         pixel_values, grid = patchify(
-            resize_center_crop(frames, self.frame_size), self.duplicate_frames
+            resize_center_crop(frames, self.frame_size), self.duplicate_frames,
+            self.temporal_patch_size,
         )
+        real_future_eligible = bool(
+            video_stats["state_eligible"] and not self.duplicate_frames
+        )
+        # EXP-11's CE recipe includes synthetic order/direction/speed questions.
+        # Keep those examples for answer CE, but never call their transformed
+        # sequence a real +1 s future target for the state objective.
+        video_stats["state_eligible"] = bool(real_future_eligible and template is None)
+        video_stats["state_skipped_short"] = not real_future_eligible
+        video_stats["state_skipped_temporal_augmentation"] = template is not None
         return {"pixel_values": pixel_values, "grid_thw": grid,
-                "question": question, "answer": answer}
+                "question": question, "answer": answer, "index": manifest_i,
+                "video_stats": video_stats}
 
 
 class QACollator:
@@ -355,10 +405,10 @@ class QACollator:
         input_ids = torch.full((len(seqs), L), pad, dtype=torch.long)
         lab_t = torch.full((len(seqs), L), -100, dtype=torch.long)
         attn = torch.zeros(len(seqs), L, dtype=torch.long)
-        for i, (s, l) in enumerate(zip(seqs, labels)):
-            input_ids[i, : len(s)] = torch.tensor(s)
-            lab_t[i, : len(l)] = torch.tensor(l)
-            attn[i, : len(s)] = 1
+        for i, (sequence, label_sequence) in enumerate(zip(seqs, labels)):
+            input_ids[i, : len(sequence)] = torch.tensor(sequence)
+            lab_t[i, : len(label_sequence)] = torch.tensor(label_sequence)
+            attn[i, : len(sequence)] = 1
         return {
             "pixel_values": torch.stack([b["pixel_values"] for b in batch]),
             "grid_thw": batch[0]["grid_thw"],
@@ -366,4 +416,21 @@ class QACollator:
             "answer_token_count": torch.tensor(answer_token_counts, dtype=torch.float32),
             "answer_truncated": torch.tensor(answer_truncated, dtype=torch.float32),
             "question_truncated": torch.tensor(question_truncated, dtype=torch.float32),
+            "indices": torch.tensor([b.get("index", -1) for b in batch], dtype=torch.long),
+            "state_eligible": torch.tensor(
+                [bool(b.get("video_stats", {}).get("state_eligible", False)) for b in batch],
+                dtype=torch.bool,
+            ),
+            "video_stats": {
+                key: torch.tensor(
+                    [float(b.get("video_stats", {}).get(key, 0.0)) for b in batch],
+                    dtype=torch.float32,
+                )
+                for key in (
+                    "raw_frame_count", "unique_frame_count", "temporal_unit_count",
+                    "duplicate_adjacent_ratio", "effective_fps", "state_skipped_short",
+                    "state_skipped_temporal_augmentation",
+                    "nearest_frame_substitutions", "decode_retry_count",
+                )
+            },
         }

@@ -11,6 +11,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from .temporal_units import temporal_diagnostics
+
 IMAGE_MEAN = 0.5
 IMAGE_STD = 0.5
 PATCH_SIZE = 16
@@ -52,7 +54,10 @@ def decode_frames(
     end: float | None = None,
     random_offset: bool = False,
     rng: np.random.Generator | None = None,
-) -> np.ndarray:
+    return_metadata: bool = False,
+    temporal_patch_size: int = TEMPORAL_PATCH_SIZE,
+    state_horizon_units: int = 1,
+) -> np.ndarray | tuple[np.ndarray, dict]:
     """Decode `num_frames` frames as uint8 (T, H, W, 3). `start`/`end` (seconds) crop a segment."""
     import av
 
@@ -92,11 +97,28 @@ def decode_frames(
     # fill any missing indices with the nearest decoded frame
     keys = sorted(frames)
     out = []
+    resolved_idx = []
     for i in idx:
         i = int(i)
         k = i if i in frames else min(keys, key=lambda x: abs(x - i))
         out.append(frames[k])
-    return np.stack(out)
+        resolved_idx.append(k)
+    result = np.stack(out)
+    if not return_metadata:
+        return result
+    diagnostics = temporal_diagnostics(
+        np.asarray(resolved_idx), native_fps=native_fps,
+        temporal_patch_size=temporal_patch_size,
+        horizon_units=state_horizon_units,
+        expected_fps=sample_fps,
+    ).to_dict()
+    diagnostics["sampled_frame_ids"] = [int(value) for value in idx]
+    diagnostics["decoded_frame_ids"] = [int(value) for value in resolved_idx]
+    diagnostics["nearest_frame_substitutions"] = int(
+        np.count_nonzero(np.asarray(resolved_idx) != idx)
+    )
+    diagnostics["native_fps"] = float(native_fps)
+    return result, diagnostics
 
 
 # ---------------------------------------------------------------------- preprocess
@@ -111,29 +133,35 @@ def resize_center_crop(frames: np.ndarray, size: int) -> torch.Tensor:
     return x[:, :, top : top + size, left : left + size].clamp(0, 1)
 
 
-def patchify(frames: torch.Tensor, duplicate_frames: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
+def patchify(
+    frames: torch.Tensor,
+    duplicate_frames: bool = True,
+    temporal_patch_size: int = TEMPORAL_PATCH_SIZE,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """float32 (T,3,H,W) in [0,1] -> (pixel_values (S, patch_dim), grid_thw (3,)).
 
     duplicate_frames=True repeats every frame x2 so one temporal group (latent slot)
     corresponds to exactly one sampled frame (temporal_patch_size=2).
     """
     x = (frames - IMAGE_MEAN) / IMAGE_STD
+    if temporal_patch_size < 1:
+        raise ValueError("temporal_patch_size must be positive")
     if duplicate_frames:
-        x = x.repeat_interleave(2, dim=0)
+        x = x.repeat_interleave(temporal_patch_size, dim=0)
     T = x.shape[0]
-    if pad := -T % TEMPORAL_PATCH_SIZE:
+    if pad := -T % temporal_patch_size:
         x = torch.cat([x, x[-1:].expand(pad, -1, -1, -1)], dim=0)
     patches = x.unsqueeze(0)  # (1, T, C, H, W)
     batch_size = 1
     channel = patches.shape[2]
-    grid_t = patches.shape[1] // TEMPORAL_PATCH_SIZE
+    grid_t = patches.shape[1] // temporal_patch_size
     resized_height, resized_width = patches.shape[-2], patches.shape[-1]
     grid_h, grid_w = resized_height // PATCH_SIZE, resized_width // PATCH_SIZE
     # --- begin verbatim HF layout ---
     patches = patches.view(
         batch_size,
         grid_t,
-        TEMPORAL_PATCH_SIZE,
+        temporal_patch_size,
         channel,
         grid_h // MERGE_SIZE,
         MERGE_SIZE,
@@ -146,7 +174,7 @@ def patchify(frames: torch.Tensor, duplicate_frames: bool = True) -> tuple[torch
     flatten_patches = patches.reshape(
         batch_size,
         grid_t * grid_h * grid_w,
-        channel * TEMPORAL_PATCH_SIZE * PATCH_SIZE * PATCH_SIZE,
+        channel * temporal_patch_size * PATCH_SIZE * PATCH_SIZE,
     )
     # --- end verbatim HF layout ---
     grid = torch.tensor([grid_t, grid_h, grid_w], dtype=torch.long)

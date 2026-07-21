@@ -1,0 +1,7 @@
+_base_: ../orca_token_sweep/_base.yaml
+model:
+  visual_tokens_per_unit: PLACEHOLDER_K
+  state_predictor_mode: query
+train:
+  seed: 1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp12_event/b4_obs_query_seed1

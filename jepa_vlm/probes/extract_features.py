@@ -19,7 +19,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..config import Config, ModelConfig, TrainConfig
+from ..config import Config, ModelConfig, TrainConfig, resolved_raw_num_frames
 from ..data.datasets import ManifestVideoDataset, collate_visual
 from ..modeling.model import build_model
 
@@ -37,6 +37,8 @@ def load_run(config_path: str, ckpt_dir: str | None):
         state = torch.load(os.path.join(ckpt_dir, "state.pt"), map_location="cpu", weights_only=False)
         missing, unexpected = model.load_state_dict(state["model"], strict=False)
         assert not unexpected, f"unexpected keys: {unexpected[:5]}"
+        if model.state_center is not None:
+            model.load_checkpoint_aux_state(state.get("model_aux", {}))
         print(f"loaded {len(state['model'])} tensors from {ckpt_dir}")
     model.eval()
     return cfg, model
@@ -85,9 +87,11 @@ def main():
 
     ds = ManifestVideoDataset(
         args.manifest, data_root=args.data_root or cfg.train.data_root,
-        num_frames=cfg.train.num_frames, sample_fps=cfg.train.sample_fps,
+        num_frames=resolved_raw_num_frames(cfg), sample_fps=cfg.train.sample_fps,
         frame_sampling=cfg.train.frame_sampling, frame_size=cfg.model.frame_size,
-        duplicate_frames=cfg.model.duplicate_frames, training=False,
+        duplicate_frames=cfg.model.duplicate_frames,
+        temporal_patch_size=cfg.train.temporal_patch_size,
+        state_horizon_units=cfg.train.state_horizon_units, training=False,
         temporal_transform=args.temporal_transform,
     )
     if args.max_clips:

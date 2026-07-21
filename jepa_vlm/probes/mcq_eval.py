@@ -24,6 +24,7 @@ import re
 import numpy as np
 import torch
 
+from ..config import resolved_raw_num_frames, resolved_temporal_units, resolved_visual_tokens
 from ..data.datasets import QACollator
 from ..data.video_io import decode_frames, patchify, resize_center_crop
 from .extract_features import load_run
@@ -109,7 +110,7 @@ def main():
     ids = {k: getattr(model.hf_config, k) for k in
            ("video_token_id", "vision_start_token_id", "vision_end_token_id")}
     collator = QACollator(tokenizer, ids,
-                          cfg.train.num_frames * cfg.model.tokens_per_frame,
+                          resolved_temporal_units(cfg) * resolved_visual_tokens(cfg),
                           cfg.train.max_text_len)
 
     tc, mc = cfg.train, cfg.model
@@ -132,10 +133,10 @@ def main():
         rng = np.random.default_rng(args.seed * 100003 + i)
         try:
             if images_info:
-                frames = load_image_frames(images_info, tc.num_frames)
+                frames = load_image_frames(images_info, resolved_raw_num_frames(cfg))
             else:
                 frames = decode_frames(
-                    it["视频"], tc.num_frames, tc.sample_fps, tc.frame_sampling,
+                    it["视频"], resolved_raw_num_frames(cfg), tc.sample_fps, tc.frame_sampling,
                     random_offset=False, rng=rng,
                 )
         except Exception as e:  # noqa: BLE001
@@ -143,7 +144,10 @@ def main():
             n_skip += 1
             n_parsed -= 1
             continue
-        pv, grid = patchify(resize_center_crop(frames, mc.frame_size), mc.duplicate_frames)
+        pv, grid = patchify(
+            resize_center_crop(frames, mc.frame_size), mc.duplicate_frames,
+            tc.temporal_patch_size,
+        )
 
         batch = collator([
             {"pixel_values": pv, "grid_thw": grid, "question": question, "answer": ans}
@@ -162,8 +166,11 @@ def main():
         sub = it.get("子类别", "?")
         stats[sub][1] += 1
         stats[sub][0] += int(pred == tgt)
-        records.append({"idx": i, "pred": pred, "gold": tgt, "sub_type": sub,
-                        "ok": int(pred == tgt)})
+        records.append({
+            "idx": i, "pred": pred, "gold": tgt, "sub_type": sub,
+            "ok": int(pred == tgt),
+            "option_scores": {letter: float(score) for (letter, _), score in zip(opts, ce)},
+        })
         if (i + 1) % 100 == 0:
             done = sum(v[1] for v in stats.values())
             corr = sum(v[0] for v in stats.values())

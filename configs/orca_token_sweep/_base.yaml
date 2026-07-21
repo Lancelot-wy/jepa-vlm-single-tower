@@ -1,0 +1,73 @@
+# EXP-12 shared scientific contract.  A0-A5 may override only K, state mode,
+# and their output identity.  EXP-11 used full-LLM training, so this sweep does too.
+_base_: ../exp11_frozen_sft_s0.yaml
+model:
+  pretrained: /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-2B-Instruct
+  dtype: bfloat16
+  attn_implementation: sdpa
+  frame_size: 256
+  pooling: avg
+  duplicate_frames: false
+  visual_pooling_mode: spatial_avg
+  mask_variant: v1
+  reg_enabled: false
+  mtp_enabled: false
+  dual_view: "off"
+  orca_enabled: false
+  state_query_count: auto
+  state_query_position_encoding: true
+  num_horizon_embeddings: 8
+  state_horizon_values_seconds: [0.5, 1.0, 2.0, 4.0]
+  state_head_hidden: 0
+  state_center_momentum: 0.99
+  state_loss_weight: 0.05
+  state_dynamic_weighting: true
+  state_dynamic_threshold: 0.05
+  beat_copy_loss_weight: 0.0
+  beat_copy_margin: 0.05
+  random_mask_ratio: 0.0
+  event_condition_enable: false
+  event_loss_weight: 0.05
+  event_aux_probability: 0.25
+  event_direction_mode: bidirectional
+  event_dynamic_threshold: 0.08
+  event_query_count: auto
+  event_target_sampling: random_inner
+  event_target_inner_min: 0.2
+  event_target_inner_max: 0.8
+  event_hard_negative_mode: same_video_other_event
+train:
+  phase: b
+  text_manifest: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa_data/exp10_curated/qa_train_clean.jsonl
+  val_manifest: ""
+  min_flow: 0.0
+  num_frames: 32
+  raw_num_frames: 32
+  sample_fps: 4.0
+  clip_duration_seconds: 8.0
+  temporal_patch_size: 2
+  num_temporal_units: 16
+  state_horizon_units: 2
+  state_horizon_seconds: 1.0
+  frame_sampling: fps_or_uniform
+  deterministic_data_order: true
+  batch_size: 1
+  grad_accum: 8
+  num_workers: 4
+  base_model_learning_rate: 1.0e-5
+  state_head_learning_rate: 1.0e-4
+  weight_decay: 0.1
+  warmup_steps: 40
+  max_steps: 800
+  lr_scheduler_type: cosine
+  grad_clip: 1.0
+  gradient_checkpointing: false
+  train_vision: false
+  train_llm: full
+  log_every: 10
+  save_every: 400
+  eval_every: 999999
+  checkpoint_style: checkpoint
+  log_filename: trainer_log.jsonl
+  seed: 0
+  event_dataset_path: ""

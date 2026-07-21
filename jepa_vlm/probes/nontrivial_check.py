@@ -15,6 +15,8 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 
+from ..config import resolved_raw_num_frames
+
 from ..data.datasets import ManifestVideoDataset, collate_visual
 from .extract_features import load_run
 
@@ -40,9 +42,11 @@ def main():
 
     ds = ManifestVideoDataset(
         args.manifest, data_root=args.data_root or cfg.train.data_root,
-        num_frames=cfg.train.num_frames, sample_fps=cfg.train.sample_fps,
+        num_frames=resolved_raw_num_frames(cfg), sample_fps=cfg.train.sample_fps,
         frame_sampling=cfg.train.frame_sampling, frame_size=cfg.model.frame_size,
-        duplicate_frames=cfg.model.duplicate_frames, training=False,
+        duplicate_frames=cfg.model.duplicate_frames,
+        temporal_patch_size=cfg.train.temporal_patch_size,
+        state_horizon_units=cfg.train.state_horizon_units, training=False,
     )
     dl = DataLoader(ds, batch_size=args.batch_size, num_workers=args.num_workers,
                     collate_fn=collate_visual, drop_last=True)

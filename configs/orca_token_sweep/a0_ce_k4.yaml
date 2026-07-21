@@ -1,0 +1,6 @@
+_base_: _base.yaml
+model:
+  visual_tokens_per_unit: 4
+  state_predictor_mode: none
+train:
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp12/a0_ce_k4
