@@ -20,6 +20,8 @@ import argparse
 import numpy as np
 import torch
 
+from ..config import resolved_raw_num_frames, resolved_temporal_units, resolved_visual_tokens
+
 from ..data.datasets import QACollator, QAVideoDataset, load_manifest
 from ..data.video_io import decode_frames, patchify, resize_center_crop
 from .extract_features import load_run
@@ -35,7 +37,7 @@ def build_samples(items, cfg, seed: int):
         rng = np.random.default_rng(seed * 100003 + i)
         frames = decode_frames(
             it["video"] if not tc.data_root else f"{tc.data_root}/{it['video']}",
-            tc.num_frames, tc.sample_fps, tc.frame_sampling,
+            resolved_raw_num_frames(cfg), tc.sample_fps, tc.frame_sampling,
             start=it.get("start"), end=it.get("end"), random_offset=False, rng=rng,
         )
         corrupt = i % 2 == 1
@@ -48,7 +50,10 @@ def build_samples(items, cfg, seed: int):
                 while (perm == np.arange(len(frames))).all():
                     perm = rng.permutation(len(frames))
                 frames, kind = frames[perm].copy(), "shuffle"
-        pixel_values, grid = patchify(resize_center_crop(frames, mc.frame_size), mc.duplicate_frames)
+        pixel_values, grid = patchify(
+            resize_center_crop(frames, mc.frame_size), mc.duplicate_frames,
+            tc.temporal_patch_size,
+        )
         yield {"pixel_values": pixel_values, "grid_thw": grid,
                "question": QAVideoDataset.TEMPORAL_Q, "answer": "",
                "truth": "no" if corrupt else "yes", "kind": kind}
@@ -82,7 +87,7 @@ def main():
     ids = {k: getattr(model.hf_config, k) for k in
            ("video_token_id", "vision_start_token_id", "vision_end_token_id")}
     collator = QACollator(tokenizer, ids,
-                          cfg.train.num_frames * cfg.model.tokens_per_frame,
+                          resolved_temporal_units(cfg) * resolved_visual_tokens(cfg),
                           cfg.train.max_text_len)
 
     items = load_manifest(args.manifest, min_flow=args.min_flow)[: args.max_clips]

@@ -38,6 +38,8 @@ import re
 import numpy as np
 import torch
 
+from ..config import resolved_raw_num_frames, resolved_temporal_units, resolved_visual_tokens
+
 from ..data.datasets import QACollator
 from ..data.video_io import patchify, resize_center_crop
 from .extract_features import load_run
@@ -212,7 +214,7 @@ def main():
     ids = {k: getattr(model.hf_config, k) for k in
            ("video_token_id", "vision_start_token_id", "vision_end_token_id")}
     collator = QACollator(tokenizer, ids,
-                          cfg.train.num_frames * cfg.model.tokens_per_frame,
+                          resolved_temporal_units(cfg) * resolved_visual_tokens(cfg),
                           cfg.train.max_text_len)
     tc, mc = cfg.train, cfg.model
 
@@ -223,15 +225,20 @@ def main():
         if it["qid"] in done:
             continue
         try:
-            frames = decode_prefix_frames(it["video"], it["t"], tc.num_frames,
-                                          args.mode, args.window)
+            frames = decode_prefix_frames(
+                it["video"], it["t"], resolved_raw_num_frames(cfg),
+                args.mode, args.window,
+            )
         except Exception as e:  # noqa: BLE001
             n_fail += 1
             if n_fail <= 10:
                 print(f"  [{i}] decode failed ({it['video']}): {e}")
             continue
         q, answers = _mcq_texts(it["question"], it["options"])
-        pv, grid = patchify(resize_center_crop(frames, mc.frame_size), mc.duplicate_frames)
+        pv, grid = patchify(
+            resize_center_crop(frames, mc.frame_size), mc.duplicate_frames,
+            tc.temporal_patch_size,
+        )
         batch = collator([
             {"pixel_values": pv, "grid_thw": grid, "question": q, "answer": ans}
             for ans in answers
