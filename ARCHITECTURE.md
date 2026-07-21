@@ -132,3 +132,56 @@ dataclass（ModelConfig/TrainConfig）+ YAML `_base_` 继承 + 命令行 `key=va
 | 13 | 效率默认：eff batch 128（8 卡×8×accum2）、6000 步 ≈ SSv2+Ego4D 2 epoch、lr 1e-4/1e-5 | 方案"1-2 epoch 即可评估" | 集群规模定了后按线性缩放 |
 | 14 | probe 时序特征 = 逐帧 mean 后 concat（16×2048 维） | mean-pool 全 clip 会抹掉太多顺序信息 | 也可改成取 [t] 末 token 等 |
 | 15 | `mask_tube_max_run=4`：连续 mask 段最长 4 帧 | "连续或分散"的折中实现 | 配置键 |
+
+## 7. EXP-12 单冻结视觉塔状态预测
+
+前六节描述历史 mask/MTP 路径；EXP-12 保留这些入口，但 A0–A5 不调用它们。
+
+```text
+32 raw frames @ 4 fps
+  -> real temporal patching, tp=2
+  -> 16 units: (f0,f1), (f2,f3), ..., (f30,f31)
+  -> one frozen Qwen ViT + one frozen merger
+       ├─ native full-video output -> common spatial pool K -> CE video placeholders
+       └─ each unit independently encoded -> common spatial pool K
+             source unit i -> student LLM -> query/no-query hidden -> 2-layer MLP
+             target unit i+2 -> inference_mode + detach -> centered-cosine target
+```
+
+`SpatialVisualTokenPooler` 的输入为 `[B,T,H,W,D]`，根据真实 merger grid 的长宽比选择
+恰好含 K 个位置的 factor grid，并按 row-major 输出 `[B,T,K,D]`。主 merger 特征和每个
+DeepStack level 使用同一 `pooled_grid`；视频 placeholder、MRoPE、attention mask 和
+DeepStack 注入位置同步变为 `16×K`。
+
+Observation Query 的第 `(row,col)` 个向量为：
+
+```text
+learned_query[index]
++ spatial_row_embedding[row]
++ spatial_col_embedding[col]
++ horizon_embedding[1.0 second]
+```
+
+student 序列只含当前 K 个 frozen visual tokens、一个固定 observation special token 和
+K 个 Query。未来 target 不进入 student LLM。no-query 模式使用相同 source/target/horizon、
+相同 LLM 和相同 transition MLP，只把当前视觉位置的 hidden 送入 head。
+
+状态目标在 fp32 中计算。每卡先累积 target sum/count，再 all-reduce 得到全局 batch center；
+running center 以 momentum 0.99 更新并独立写入 checkpoint。动态权重和 DDP loss 分母也按
+全局有效 token 归一化：
+
+```text
+d_pred = 1 - cos(normalize(pred-center), normalize(target-center))
+d_copy = 1 - cos(normalize(current-center), normalize(target-center))
+dynamic_weight = clamp(stopgrad(d_copy) / 0.05, 0, 1)
+L_state = global_weighted_mean(dynamic_weight * d_pred)
+L_total = L_CE + 0.05 * L_state
+```
+
+`persistence_ratio` 使用全局 `mean(d_pred) / mean(d_copy)`。小于 0.90 才满足预注册的
+“明显优于复制当前状态”门槛；只看 state loss 下降不能证明学到了动态。
+
+Event 路径复用同一物理视觉模块、transition head 和 running center。source、direction、
+condition 与 Event Query 进入 LLM；true target 和 same-video wrong-event negative 只过冻结
+视觉模块。Event manifest 按 video_id hash 切分，并检查事件边界、媒体时长和 previous/next
+邻接关系。A0–A5 的 `event_condition_enable=false`，因此 Event 不影响首批结果。

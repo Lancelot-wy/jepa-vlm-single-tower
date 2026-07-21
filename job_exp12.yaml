@@ -1,0 +1,31 @@
+# EXP-12 company topology: 24 Workers x 4 L40S = 96 GPUs.
+# The entrypoint splits this into six independent 4-Worker/16-GPU DDP worlds.
+type: jexp12-orca
+business: VLM-wl01
+subBusiness: mm-general
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+- /data/vjuicefs_ai_gpt_nlp/public_data
+tmpfs: true
+restartPolicy: Never
+
+run:
+  command: "EXP12_RUN_ID=unset EXP12_ATTEMPT_ID=unset EXP12_RESUME=0 EXP12_GIT_COMMIT=unset EXP12_NODES_PER_ARM=4 EXP12_GRAD_ACCUM=2 EXP12_NUM_WORKERS=4 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp12_entry.sh"
+  rdma: 'ib'
+
+spec:
+  Worker:
+    num: 24
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

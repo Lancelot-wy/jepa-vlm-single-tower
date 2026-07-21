@@ -75,3 +75,30 @@ consistent positive paired delta on the preregistered benchmark readout and
 the MTP persistence diagnostic is healthy.  Start fresh with a new cosine
 schedule and output directory; do not resume a completed 4,000-update run to
 change `max_steps`.
+
+## EXP-12 open issues and stop conditions
+
+These items are not resolved by the local unit suite:
+
+| Issue | Current protection | Required server evidence |
+|---|---|---|
+| Exact Qwen/Transformers tensor contract | Tiny Qwen forward/backward covers CE, Query, DeepStack and MRoPE shapes | Real `Qwen3-VL-2B-Instruct` smoke for K=4/16/64 on the pinned server environment |
+| L40S memory at K=64 | Frozen visual inference avoids visual backward activations; `use_cache=false`; batch/cutoff fixed | Save `nvidia-smi`/`max_memory_gb`; investigate target grad or duplicate activation before changing any scientific setting |
+| Multi-node rendezvous | Job partitions TF_CONFIG ranks into six independent 4-Worker worlds | Resource audit must show 24 Workers×4 GPU, six worlds×16 GPU, GA=2, EB=32 |
+| Shared-mount decode quality | Diagnostics use actual decoded frame IDs and reject duplicate/wrong-fps state samples | Preflight must decode at least one eligible 32-frame clip and report retry/substitution/eligibility fractions during training |
+| Throughput / eight-hour target | Six arms and six evaluations run concurrently; logs use global EB throughput | Calibrate from real `sec_per_step`; eight hours is a target, not a current guarantee |
+| State shortcut | centered margin, shuffled targets, retrieval and effective rank are logged | `persistence_ratio < 0.90` and centered margin >0.10 on validation; otherwise report FAIL |
+| Event labels | Strict schema, adjacency, duration, hard-negative and split tests exist | No audited event manifest path is registered; B0–B5 must remain unsubmitted |
+| Re-encoded benchmark contamination | EXP-10 source/provenance gate and exact IDs/paths are reused | Perceptual duplicate risk remains; EXP-12 does not claim it is solved |
+
+Additional operational rules:
+
+- Do not pull inside a running GPU Pod. Patch on the shared development checkout, commit/push, then submit a fixed hash.
+- An interrupted `.tmp` checkpoint is not resumable. Only `state.pt` plus matching
+  `checkpoint_meta.json` counts as complete.
+- Resume refuses scientific config drift and missing trainable tensors. A completed arm from another commit cannot
+  be mixed into a new sweep run ID.
+- EXP-11 synthetic temporal augmentations remain in CE, but those transformed samples are explicitly ineligible for
+  the +1 second state objective.
+- The actual repository uses a custom PyTorch/Accelerate loop, not LLaMA-Factory Trainer. Installing
+  LLaMA-Factory does not change the execution path.

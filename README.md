@@ -3,6 +3,27 @@
 在 Qwen3-VL-2B 的 LLM 主干上施加视觉 latent 回归目标（V1 / V2.1 / V2.2 + MTP），
 验证模型能否学到帧间动力学信息。实现对应实验方案全部内容，所有变体与消融由 config 控制。
 
+## EXP-12：Orca 单塔视觉 token sweep
+
+当前开发分支 `exp12-orca-token-sweep` 增加了一条与历史 mask/MTP 接口隔离的
+Orca-style 状态预测路径：
+
+- 32 张真实相邻帧按 `(f0,f1) ... (f30,f31)` 组成 16 个 Qwen temporal units，
+  不再用 `f0,f0,f1,f1...` 填充；
+- 只保留一套物理 ViT/merger，二者冻结；EXP-11 的完整 LLM 更新方式保持不变；
+- merger 主特征与全部 DeepStack 特征统一做 aspect-aware spatial average pooling，
+  支持每个时间单元 `K=4/16/64`；
+- CE、no-query、Observation Query、Observation+Event Query 四种模式共用同一模型入口；
+- 状态目标使用跨卡 running-center centered cosine，并记录 copy/persistence、shuffle、
+  retrieval、effective-rank 与动态样本指标；
+- A0–A5 只跑 `K × {CE, Observation Query}`，Event 代码已实现但默认关闭且不会自动提交。
+
+第一批配置在 `configs/orca_token_sweep/`，服务器唯一执行说明见
+[`docs/EXP12_RUNBOOK.md`](docs/EXP12_RUNBOOK.md)，实现/验证边界见
+[`docs/EXP12_IMPLEMENTATION_REPORT.md`](docs/EXP12_IMPLEMENTATION_REPORT.md)。正式提交前必须
+通过 K=4/16/64 的真实 Qwen、4×L40S DDP save/resume/eval smoke；本地 tiny-model 测试
+不能代替该门槛。
+
 已在本地完成端到端冒烟验证（tiny 随机模型 + 合成视频，CPU/MPS）：训练全变体、
 Phase B 联合训练、三项评估、断点恢复、梯度冻结、**DeepStack 防泄漏单测**均通过；
 真实 `Qwen/Qwen3-VL-2B-Instruct` 的 config 已确认与代码兼容（meta device 实例化验证）。
