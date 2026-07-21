@@ -15,7 +15,7 @@ restartPolicy: Never
 
 run:
   rdma: 'ib'
-  command: "EXP11_RUN_ID=unset EXP11_ATTEMPT_ID=unset EXP11_RESUME=0 EXP11_ARMS=exp11_frozen_sft_s0,exp11_mask15_s0,exp11_orca_obs_s0 EXP11_NODES_PER_ARM=8 EXP11_GRAD_ACCUM=1 EXP11_NUM_WORKERS=3 EXP11_MAX_STEPS=4000 EXP11_SAVE_EVERY=250 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp11_orca16_entry.sh"
+  command: "EXP11_RUN_ID=unset EXP11_ATTEMPT_ID=unset EXP11_RESUME=0 EXP11_ARMS=exp11_frozen_sft_s0,exp11_mask15_s0,exp11_orca_noquery_s0,exp11_orca_obs_s0 EXP11_NODES_PER_ARM=6 EXP11_GRAD_ACCUM=1 EXP11_NUM_WORKERS=3 EXP11_MAX_STEPS=4000 EXP11_SAVE_EVERY=250 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp11_orca24_entry.sh"
 
 spec:
   Worker:
