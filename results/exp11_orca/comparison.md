@@ -78,3 +78,11 @@ TempCompass 分类明细（correct/total）：
   现有结果补算。
 - 训练初期曾因 pilot 脚本 `local arm="$1" out=".../${arm}"` 的赋值顺序 bug 导致三臂
   共用同一 output_dir，已修复（`out=".../$1"`，commit `af456bd`）。
+
+## 后续：run24 batch96 4-arm 复跑（含 orca_noquery 第 4 臂）
+
+用 24 节点 4 臂 × 6 节点（batch96）复跑并新增 `orca_noquery` 消融，见
+`run24_batch96/comparison.md`。关键结论：**上文第 3 条 orca_obs 的 TempCompass 优势
+（+0.95%）在 batch96 下未复现（仅 +0.26% over frozen）**，且 orca_obs 与 orca_noquery
+无显著差异 —— 原 +0.95% 大概率为种子/batch 噪声。在冻结 ViT 设定下，Orca 目标、
+mask 正则、query interface 对 MVBench/TempCompass 均无显著下游影响。
