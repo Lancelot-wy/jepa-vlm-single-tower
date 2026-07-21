@@ -14,7 +14,7 @@
 | EXP-08 | 无 mask 纯 MSE 收益（旧小数据） | r3_mse vs r3_sft，2×2 种子 | **撤销**（旧数据 2.5 万 QA×20 epoch 不健康，并入 EXP-09 直接在扩充数据上测；r3_* 新配置不提交） | — | — |
 | EXP-09 | 扩充数据上的纯 MSE 收益（原方案） | LLaVA-178K + NExT-QA train + v2 增广 | **暂停 / 不得作为正式主线启动**：NExT-QA train 未证实，LLaVA 复合来源仅靠路径名与 basename 不能完成来源级去污染 | — | EXECUTE_NOW.md（历史记录） |
 | EXP-10 | 来源审计的四源混合数据 | LLaVA-Video QA + Vript + InternVid + OpenVid；CE vs CE+MSE × 2 seeds，4,000 步，v2 增广 | **开放（当前唯一主线）**；本地视频可解析、来源白名单和评测 ID/路径去重均为开训硬门槛 | MVBench 49.36 / TempCompass 57.09（sft_s0） | CURATED_EXP10.md |
-| EXP-11 | Orca-inspired 目标 @ 冻结 ViT | 同 EXP-10 数据；frozen_sft vs mask15 vs orca_obs，`train_vision=false`，4,000 步 | **已完成**；冻结 ViT 隔离 Orca 目标效果；三臂 MVBench 打平，orca_obs TempCompass 最优 | MVBench 47.46 / TempCompass 56.33（orca_obs） | results/exp11_orca/comparison.md |
+| EXP-11 | Orca-inspired 目标 @ 冻结 ViT | 同 EXP-10 数据；frozen_sft vs mask15 vs orca_obs（+orca_noquery），`train_vision=false`，4,000 步 | **已完成**；冻结 ViT 隔离 Orca 目标效果；3-arm(batch128) 与 4-arm(batch96) 两次 run，Orca/mask/query 对下游均无显著影响（初次 orca_obs TempCompass +0.95% 未复现，判为噪声） | MVBench 47.81 / TempCompass 55.82（run24 batch96 最佳臂） | results/exp11_orca/comparison.md 与 results/exp11_orca/run24_batch96/comparison.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 
