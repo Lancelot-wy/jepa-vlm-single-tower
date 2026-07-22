@@ -16,12 +16,12 @@
 | EXP-10 | 来源审计的四源混合数据 | LLaVA-Video QA + Vript + InternVid + OpenVid；CE vs CE+MSE × 2 seeds，4,000 步，v2 增广 | **开放（当前唯一主线）**；本地视频可解析、来源白名单和评测 ID/路径去重均为开训硬门槛 | MVBench 49.36 / TempCompass 57.09（sft_s0） | CURATED_EXP10.md |
 | EXP-11 | Orca-inspired 目标 @ 冻结 ViT | 同 EXP-10 数据；frozen_sft vs mask15 vs orca_obs，`train_vision=false`，4,000 步 | **已完成**；冻结 ViT 隔离 Orca 目标效果；三臂 MVBench 打平，orca_obs TempCompass 最优 | MVBench 47.46 / TempCompass 56.33（orca_obs） | results/exp11_orca/comparison.md |
 | EXP-12 | Orca 单塔 visual-token sweep | 32 真实帧/16 units；K=4/16/64 × CE/Observation Query；冻结 ViT+merger；800 updates | **已完成**；K=64（当前 256px 原生 grid）最优，Observation Query 无增益（persistence>1，门控 FAIL）；不得在同分辨率直接扩 K>64 | MVBench 54.47 / TempCompass 60.19（a4_ce_k64，内部自研尺） | results/exp12_orca_token_sweep/README.md、docs/EXP12_RUNBOOK.md |
-| EXP-13 | Qwen 原生协议锚定 | matched-32 的 raw/A4 多协议诊断；另加 2fps、2048 帧、224K 总/640-unit 预算的 raw/A4×full/cap32 MVBench 锚点 | **已配置，待服务器运行**；official-budget 仅称 reproduction，不冒充私有官方 harness | — | docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md、docs/EXP13_EXP14_PARALLEL_RUNBOOK.md |
-| EXP-14 | K64 state 机制诊断 | 复用 A4/A5 seed0；补 CE/Query seed1、no-query×2、Query+anti-copy×2；800 updates、双种子 | **已配置，待服务器运行**；先要求 margin>0.10、persistence<0.90，再看同 seed benchmark protection；禁止自动进 Event | — | docs/EXP13_EXP14_PARALLEL_RUNBOOK.md |
+| EXP-13 | Qwen 原生协议锚定 | matched-32 的 raw/A4 多协议诊断；另加 2fps、2048 帧、224K 总/640-unit 预算的 raw/A4×full/cap32 MVBench 锚点 | **已完成**；official-budget 4 协议 raw/full 落入 61.7 合理带（GREEN, −1.02pp），anchor 16 协议 Complete:True；official-budget 仅称 reproduction，不冒充私有官方 harness | `runs/exp13-official/official-budget-20260722-192843-a68f784/`、`runs/exp13/native-anchor-20260722-192909-a68f784/` | docs/EXP12_13_14_RESULTS.md、docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md、docs/EXP13_EXP14_PARALLEL_RUNBOOK.md |
+| EXP-14 | K64 state 机制诊断 | 复用 A4/A5 seed0；补 CE/Query seed1、no-query×2、Query+anti-copy×2；800 updates、双种子 | **已完成**；8 arm 全部 persistence≈1.0、margin≈0，**无 candidate**——K64 state 仍是复制/检索解；未自动进 Event | `runs/exp14/exp14-20260722-144952-1a5c061/` | docs/EXP12_13_14_RESULTS.md、docs/EXP13_EXP14_PARALLEL_RUNBOOK.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 
-- **当前主线**：EXP-12 训练已完成；EXP-13 baseline 恢复与 EXP-14 K64 机制诊断并行。
+- **当前主线**：EXP-12 训练、EXP-13 baseline 恢复/锚定、EXP-14 K64 机制诊断均已完成；结果汇总 docs/EXP12_13_14_RESULTS.md。
   24 Worker 分配为 7（matched-32）+4（official-budget）+12（六组训练）+1 预留。
   EXP-10/11 的已有结果继续作为历史证据，不冒充 EXP-12/13/14 对照结果。
 - **训练数据**：EXP-04/05 的 `qa_train_flow.jsonl`/`min_flow=8.42` 仅是历史 LLaVA
@@ -53,7 +53,7 @@
 | C10 | ✓ | ✗ | next-hidden 自预测 | vlm-jepa λ 系列 | 零效应（剂量平坦） |
 | C11 | ✓ | ✗ | frozen-merger future state + spatial Query | EXP-12 A1/A3/A5 | 零/负效应：所有 K 上 query≤CE，persistence>1（退化为复制），门控 FAIL |
 | C12 | ✓ | ✗ | Event-conditioned adjacent-event state | EXP-12 B3/B5 | 仅代码/模板；A 批完成前禁止提交 |
-| C13 | ✓ | ✗ | frozen-merger future state，无 query / Query+anti-copy | EXP-14 | 已注册双种子；待跑，Event 不自动衔接 |
+| C13 | ✓ | ✗ | frozen-merger future state，无 query / Query+anti-copy | EXP-14 | 已完成：8 arm persistence≈1.0、margin≈0，仍复制/检索解，无 candidate，Event 不自动衔接 |
 
 读法：mask 是净负资产（C9）；干净输入 + visual loss 中 target 空间决定生死
 （C10 输出空间自预测=零，C7 编码器空间帧预测=唯一正方向）；设计空间已基本覆盖，
