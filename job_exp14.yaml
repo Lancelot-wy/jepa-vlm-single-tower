@@ -1,0 +1,30 @@
+# EXP-14: 12 Workers x 4 L40S. Entry splits into six 2-Worker/8-GPU worlds.
+type: jexp14-state-diagnostics
+business: VLM-wl01
+subBusiness: mm-general
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+- /data/vjuicefs_ai_gpt_nlp/public_data
+tmpfs: true
+restartPolicy: Never
+
+run:
+  command: "EXP14_RUN_ID=unset EXP14_ATTEMPT_ID=unset EXP14_RESUME=0 EXP14_GIT_COMMIT=unset EXP14_NODES_PER_ARM=2 EXP14_GRAD_ACCUM=4 EXP14_NUM_WORKERS=4 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp14_entry.sh"
+  rdma: 'ib'
+
+spec:
+  Worker:
+    num: 12
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

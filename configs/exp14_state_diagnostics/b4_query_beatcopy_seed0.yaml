@@ -1,0 +1,10 @@
+_base_: _base.yaml
+model:
+  state_predictor_mode: query
+  # compute_state_objective first forms (base + weight * anti-copy), then the
+  # complete state objective is multiplied by state_loss_weight=0.05.  A value
+  # of 1.0 therefore gives anti-copy equal state-level scale, not total loss 1.0.
+  beat_copy_loss_weight: 1.0
+train:
+  seed: 0
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp14/b4_query_beatcopy_seed0

@@ -1,0 +1,30 @@
+# EXP-13 official-budget anchor: 4 Workers x 4 L40S, evaluation only.
+type: jexp13-official-budget-anchor
+business: VLM-wl01
+subBusiness: mm-general
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+- /data/vjuicefs_ai_gpt_nlp/public_data
+tmpfs: true
+restartPolicy: Never
+
+run:
+  command: "EXP13_OFFICIAL_RUN_ID=unset EXP13_OFFICIAL_ATTEMPT_ID=unset EXP13_OFFICIAL_GIT_COMMIT=unset EXP13_OFFICIAL_MAX_CLIPS=0 EXP13_OFFICIAL_ATTN=flash_attention_2 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp13_official_entry.sh"
+  rdma: 'ib'
+
+spec:
+  Worker:
+    num: 4
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

@@ -1,5 +1,8 @@
 # EXP-12 原生 Qwen 锚点评测执行手册（EXP-13）
 
+本文件描述 matched-32 阶段。新增的 2fps/full-budget baseline 与 EXP-14 并行提交方式见
+[`EXP13_EXP14_PARALLEL_RUNBOOK.md`](EXP13_EXP14_PARALLEL_RUNBOOK.md)；两阶段结果不得混名。
+
 ## 1. 为什么必须补这组评测
 
 EXP-12 在同一套自研评测器下给出了稳定结果：K=4/16/64 的纯 CE 臂在

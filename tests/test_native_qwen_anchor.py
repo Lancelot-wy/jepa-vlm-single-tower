@@ -19,10 +19,17 @@ from jepa_vlm.probes.native_checkpoint import (
 )
 from jepa_vlm.probes.native_qwen_mcq_eval import (
     ANSWER_INSTRUCTION,
+    OFFICIAL_MAX_FRAMES,
+    OFFICIAL_MAX_TOKENS_PER_UNIT,
+    OFFICIAL_MAX_TOTAL_VIDEO_TOKENS,
+    OFFICIAL_MVBENCH_INSTRUCTION,
     VIDEO_TOKEN,
     build_prompt,
     native_preprocess_frames,
     native_smart_resize,
+    official_frame_count,
+    official_max_pixels,
+    official_mvbench_text,
     video_replacement,
 )
 
@@ -120,6 +127,25 @@ def test_native_prompt_uses_video_turn_and_fixed_answer_instruction():
     assert build_prompt(Processor(), "question") == "rendered"
 
 
+def test_official_budget_prompt_and_token_math():
+    question = "What happens next?\n(A) opens\nB. closes\nC: stays still\nD) disappears"
+    text = official_mvbench_text(question)
+    assert text.startswith(OFFICIAL_MVBENCH_INSTRUCTION)
+    assert "Question: What happens next? Possible answer choices:" in text
+    assert text.endswith("The best answer is:")
+
+    class Tokenizer:
+        def apply_chat_template(self, conversation, **kwargs):
+            assert conversation[0]["content"][1]["text"] == text
+            return "official-rendered"
+
+    assert build_prompt(Tokenizer(), question, "official_mvbench") == "official-rendered"
+    assert official_frame_count(8.0) == 16
+    assert official_frame_count(10_000.0) == OFFICIAL_MAX_FRAMES
+    assert official_max_pixels(32) == 32 * OFFICIAL_MAX_TOKENS_PER_UNIT * 1024
+    assert official_max_pixels(OFFICIAL_MAX_FRAMES) == OFFICIAL_MAX_TOTAL_VIDEO_TOKENS * 2048
+
+
 def test_torchvision_free_native_preprocess_and_timestamps():
     assert native_smart_resize(
         32, 64, 96,
@@ -184,3 +210,14 @@ def test_exp13_company_job_uses_seven_evaluation_workers():
     assert "job_exp13_eval_entry.sh" in command
     assert "EXP13_ATTEMPT_ID=unset" in command
     assert "EXP13_MAX_CLIPS=0" in command
+
+
+def test_exp13_official_budget_job_uses_four_evaluation_workers():
+    with open("job_exp13_official.yaml") as handle:
+        job = yaml.safe_load(handle)
+    assert job["spec"]["Worker"]["num"] == 4
+    assert job["spec"]["Worker"]["limits"]["gpu"] == "4"
+    command = job["run"]["command"]
+    assert "job_exp13_official_entry.sh" in command
+    assert "EXP13_OFFICIAL_MAX_CLIPS=0" in command
+    assert "flash_attention_2" in command

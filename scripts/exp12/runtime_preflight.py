@@ -46,6 +46,10 @@ def main():
     parser.add_argument("--load-model", action="store_true")
     parser.add_argument("--world-size", type=int, default=0)
     parser.add_argument("--grad-accum", type=int, default=0)
+    parser.add_argument("--config-dir", default="configs/orca_token_sweep")
+    parser.add_argument("--arms", nargs="+", default=list(ARMS))
+    parser.add_argument("--expected-k", nargs="+", type=int, default=[4, 4, 16, 16, 64, 64])
+    parser.add_argument("--expected-modes", nargs="+", default=[])
     args = parser.parse_args()
 
     import torch
@@ -61,8 +65,12 @@ def main():
             raise SystemExit(f"missing required path: {path}")
 
     configs = []
-    for arm in ARMS:
-        cfg = load_config(f"configs/orca_token_sweep/{arm}.yaml")
+    if len(args.arms) != len(args.expected_k):
+        raise SystemExit("--arms and --expected-k must have equal lengths")
+    if args.expected_modes and len(args.expected_modes) != len(args.arms):
+        raise SystemExit("--expected-modes must be empty or match --arms")
+    for arm in args.arms:
+        cfg = load_config(os.path.join(args.config_dir, arm + ".yaml"))
         if pathlib.Path(cfg.model.pretrained) != pathlib.Path(args.model):
             raise SystemExit(f"{arm}: model path differs from preflight model")
         if pathlib.Path(cfg.train.text_manifest) != pathlib.Path(args.manifest):
@@ -70,8 +78,10 @@ def main():
         if resolved_raw_num_frames(cfg) != 32 or resolved_temporal_units(cfg) != 16:
             raise SystemExit(f"{arm}: temporal contract mismatch")
         configs.append(cfg)
-    if [resolved_visual_tokens(cfg) for cfg in configs] != [4, 4, 16, 16, 64, 64]:
+    if [resolved_visual_tokens(cfg) for cfg in configs] != args.expected_k:
         raise SystemExit("K sweep mismatch")
+    if args.expected_modes and [cfg.model.state_predictor_mode for cfg in configs] != args.expected_modes:
+        raise SystemExit("state-predictor mode matrix mismatch")
 
     # Decode a deterministic reservoir to catch inaccessible mounts/corrupt media
     # without making one short random clip fail an otherwise healthy corpus.
@@ -171,7 +181,7 @@ def main():
                 "mode": cfg.model.state_predictor_mode,
                 "effective_batch": cfg.train.batch_size * grad_accum * world_size,
             }
-            for arm, cfg in zip(ARMS, configs)
+            for arm, cfg in zip(args.arms, configs)
         ],
         "parameter_audit": parameter,
     }

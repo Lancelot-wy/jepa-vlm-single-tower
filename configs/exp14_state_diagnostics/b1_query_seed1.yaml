@@ -1,0 +1,6 @@
+_base_: _base.yaml
+model:
+  state_predictor_mode: query
+train:
+  seed: 1
+  output_dir: /data/vjuicefs_sz_ocr_wl/public_data/11193960/outputs/exp14/b1_query_seed1

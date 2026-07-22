@@ -1,0 +1,10 @@
+# EXP-14 keeps the winning EXP-12 K=64/data/training contract fixed.  Only the
+# registered state mechanism, anti-copy term, or seed may differ between arms.
+_base_: ../orca_token_sweep/_base.yaml
+model:
+  visual_tokens_per_unit: 64
+  beat_copy_margin: 0.05
+  beat_copy_loss_weight: 0.0
+train:
+  max_steps: 800
+  save_every: 400

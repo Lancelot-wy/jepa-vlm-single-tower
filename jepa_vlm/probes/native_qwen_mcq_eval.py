@@ -1,4 +1,4 @@
-"""MVBench/TempCompass evaluation with the native Qwen3-VL processor and generation.
+"""MVBench/TempCompass evaluation with native-compatible Qwen3-VL generation.
 
 This is an external-validity anchor for EXP-12, not a replacement for the historical
 paired evaluator.  It keeps the same 32 benchmark frames but restores Qwen's native
@@ -7,6 +7,13 @@ MRoPE construction, and greedy answer generation.  The cluster environment has n
 torchvision, so the small preprocessing compatibility layer below implements the exact
 Qwen3-VL smart-resize/patch-layout math using torch and the model's local processor
 configuration instead of instantiating ``AutoProcessor``.
+
+The default remains the EXP-13 matched-32 diagnostic.  ``official_2fps`` is a
+separate, explicitly labelled reproduction path: it decodes the real video at
+2 fps (up to 2048 frames), applies the public 224K-total/640-per-unit visual
+token budgets, and uses the technical-report MVBench prompt.  It is an
+official-*budget* anchor, not a claim that this local HF runner is byte-for-byte
+identical to Qwen's private evaluation service.
 """
 
 from __future__ import annotations
@@ -29,9 +36,17 @@ from .native_checkpoint import apply_native_overlay
 
 
 ANSWER_INSTRUCTION = "Select the best answer. Respond with only its option letter."
+OFFICIAL_MVBENCH_INSTRUCTION = (
+    "Select the best answer to the following multiple-choice question based on the video.\n"
+    "Respond with only the letter (A, B, C, or D) of the correct option."
+)
 VIDEO_TOKEN = "<|video_pad|>"
 VISION_START_TOKEN = "<|vision_start|>"
 VISION_END_TOKEN = "<|vision_end|>"
+OFFICIAL_SAMPLE_FPS = 2.0
+OFFICIAL_MAX_FRAMES = 2048
+OFFICIAL_MAX_TOTAL_VIDEO_TOKENS = 224_000
+OFFICIAL_MAX_TOKENS_PER_UNIT = 640
 
 
 def _git_commit() -> str | None:
@@ -54,6 +69,141 @@ def _duration_seconds(item: dict) -> float | None:
             if value > 0:
                 return value
     return None
+
+
+def _number(container: dict, keys: tuple[str, ...]) -> float | None:
+    if not isinstance(container, dict):
+        return None
+    for key in keys:
+        try:
+            value = float(container.get(key))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(value):
+            return value
+    return None
+
+
+def _requested_segment(item: dict) -> tuple[float | None, float | None]:
+    """Read common segment keys without assuming that every file is untrimmed."""
+    meta = item.get("meta") or {}
+    start_keys = ("start", "start_time", "start_seconds", "开始时间")
+    end_keys = ("end", "end_time", "end_seconds", "结束时间")
+    for container in (item, meta):
+        start = _number(container, start_keys)
+        end = _number(container, end_keys)
+        if start is not None or end is not None:
+            return start, end
+    return None, None
+
+
+def _video_timing(path: str) -> dict:
+    import av
+
+    with av.open(path) as container:
+        stream = container.streams.video[0]
+        native_fps = float(stream.average_rate or 24.0)
+        duration = float(stream.duration * stream.time_base) if stream.duration else None
+        if duration is None and container.duration:
+            duration = float(container.duration / av.time_base)
+        if duration is None and stream.frames:
+            duration = float(stream.frames) / native_fps
+    if duration is None or duration <= 0:
+        raise RuntimeError(f"cannot determine video duration: {path}")
+    return {"native_fps": native_fps, "video_duration_seconds": duration}
+
+
+def official_frame_count(
+    duration_seconds: float,
+    sample_fps: float = OFFICIAL_SAMPLE_FPS,
+    max_frames: int = OFFICIAL_MAX_FRAMES,
+    temporal_patch_size: int = 2,
+) -> int:
+    """Return a deterministic even frame count for Qwen's 2-fps policy."""
+    if duration_seconds <= 0 or sample_fps <= 0:
+        raise ValueError("duration_seconds and sample_fps must be positive")
+    if max_frames < 4 or max_frames % temporal_patch_size:
+        raise ValueError("max_frames must be >=4 and divisible by temporal_patch_size")
+    desired = max(4, int(math.floor(duration_seconds * sample_fps)))
+    desired = min(desired, max_frames)
+    desired -= desired % temporal_patch_size
+    return max(temporal_patch_size, desired)
+
+
+def load_official_frames(
+    item: dict,
+    *,
+    sample_fps: float = OFFICIAL_SAMPLE_FPS,
+    max_frames: int = OFFICIAL_MAX_FRAMES,
+    seed: int = 0,
+) -> tuple[np.ndarray, dict]:
+    """Decode the actual benchmark video using the official-budget frame policy."""
+    path = str(item.get("视频") or "")
+    if not path or not os.path.isfile(path):
+        raise FileNotFoundError(f"official_2fps requires an accessible 视频 path: {path!r}")
+    timing = _video_timing(path)
+    video_duration = float(timing["video_duration_seconds"])
+    requested_start, requested_end = _requested_segment(item)
+    start = max(0.0, requested_start or 0.0)
+    end = min(video_duration, requested_end) if requested_end is not None else video_duration
+    segment_fallback = False
+    # Some benchmark exports point at an already-trimmed clip while retaining
+    # original-video bounds.  In that case the only valid policy is the whole file.
+    if start >= video_duration or end <= start:
+        start, end = 0.0, video_duration
+        segment_fallback = True
+    duration = end - start
+    count = official_frame_count(duration, sample_fps, max_frames)
+    rng = np.random.default_rng(seed)
+    frames, diagnostics = decode_frames(
+        path,
+        count,
+        sample_fps,
+        "uniform",
+        start=start,
+        end=end,
+        random_offset=False,
+        rng=rng,
+        return_metadata=True,
+    )
+    effective_fps = (count - 1) / duration if count > 1 and duration > 0 else sample_fps
+    return frames, {
+        "frame_source": "video_pyav",
+        "frame_policy": "official_2fps_uniform_full_segment",
+        "timestamp_source": "decoded_segment_duration",
+        "timestamp_fps": effective_fps,
+        "requested_sample_fps": sample_fps,
+        "duration_seconds": duration,
+        "video_duration_seconds": video_duration,
+        "segment_start_seconds": start,
+        "segment_end_seconds": end,
+        "segment_bounds_fallback_to_trimmed_file": segment_fallback,
+        "max_frames": max_frames,
+        **diagnostics,
+    }
+
+
+def official_max_pixels(
+    num_frames: int,
+    *,
+    temporal_patch_size: int = 2,
+    max_total_video_tokens: int = OFFICIAL_MAX_TOTAL_VIDEO_TOKENS,
+    max_tokens_per_unit: int = OFFICIAL_MAX_TOKENS_PER_UNIT,
+) -> int:
+    """Translate public Qwen visual-token limits into smart-resize pixels.
+
+    For patch=16, temporal_patch=2 and spatial merge=2, one final video token
+    represents 2048 spatiotemporal pixels; one per-unit token represents 1024
+    spatial pixels.  The tighter of the total and per-unit budgets wins.
+    """
+    if num_frames < 1 or temporal_patch_size < 1:
+        raise ValueError("num_frames and temporal_patch_size must be positive")
+    if max_total_video_tokens < 1 or max_tokens_per_unit < 1:
+        raise ValueError("visual-token budgets must be positive")
+    padded_frames = math.ceil(num_frames / temporal_patch_size) * temporal_patch_size
+    total_budget = max_total_video_tokens * 2048
+    per_unit_budget = padded_frames * max_tokens_per_unit * 1024
+    return min(total_budget, per_unit_budget)
 
 
 def load_native_frames(
@@ -141,7 +291,13 @@ def native_smart_resize(
     return resized_height, resized_width
 
 
-def native_preprocess_frames(frames: np.ndarray, processor_config: dict) -> tuple[torch.Tensor, torch.Tensor]:
+def native_preprocess_frames(
+    frames: np.ndarray,
+    processor_config: dict,
+    *,
+    min_pixels: int | None = None,
+    max_pixels: int | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Apply Qwen smart resize, normalization and native patchification."""
     num_frames, height, width, channels = frames.shape
     if channels != 3:
@@ -150,14 +306,20 @@ def native_preprocess_frames(frames: np.ndarray, processor_config: dict) -> tupl
     temporal_patch = int(processor_config["temporal_patch_size"])
     merge_size = int(processor_config["merge_size"])
     size = processor_config["size"]
+    resolved_min_pixels = int(size["shortest_edge"] if min_pixels is None else min_pixels)
+    resolved_max_pixels = int(size["longest_edge"] if max_pixels is None else max_pixels)
+    if resolved_max_pixels < resolved_min_pixels:
+        raise ValueError(
+            f"max_pixels={resolved_max_pixels} is smaller than min_pixels={resolved_min_pixels}"
+        )
     resized_height, resized_width = native_smart_resize(
         num_frames,
         height,
         width,
         temporal_factor=temporal_patch,
         factor=patch_size * merge_size,
-        min_pixels=int(size["shortest_edge"]),
-        max_pixels=int(size["longest_edge"]),
+        min_pixels=resolved_min_pixels,
+        max_pixels=resolved_max_pixels,
     )
     tensor = torch.from_numpy(frames).permute(0, 3, 1, 2).float() / 255.0
     tensor = F.interpolate(
@@ -182,13 +344,36 @@ def video_replacement(grid_thw: torch.Tensor, timestamp_fps: float) -> str:
     )
 
 
-def build_prompt(tokenizer, question: str) -> str:
+def official_mvbench_text(question: str) -> str:
+    """Render the public Qwen technical-report MVBench question format."""
+    options = parse_options(question)
+    option_lines = {line for _, line in options}
+    stem_lines = [line.strip() for line in question.splitlines() if line.strip() not in option_lines]
+    stem = "\n".join(line for line in stem_lines if line).strip()
+    choices = "\n".join(line for _, line in options)
+    if not stem or len(options) < 2:
+        raise ValueError("official MVBench prompt requires a question stem and >=2 options")
+    return (
+        f"{OFFICIAL_MVBENCH_INSTRUCTION}\n"
+        f"Question: {stem} Possible answer choices:\n"
+        f"{choices}\n"
+        "The best answer is:"
+    )
+
+
+def build_prompt(tokenizer, question: str, prompt_style: str = "native_short") -> str:
     """Render one video/user turn while leaving replacement to the processor."""
+    if prompt_style == "native_short":
+        text = f"{question.rstrip()}\n{ANSWER_INSTRUCTION}"
+    elif prompt_style == "official_mvbench":
+        text = official_mvbench_text(question)
+    else:
+        raise ValueError(f"unknown prompt style: {prompt_style}")
     conversation = [{
         "role": "user",
         "content": [
             {"type": "video"},
-            {"type": "text", "text": f"{question.rstrip()}\n{ANSWER_INSTRUCTION}"},
+            {"type": "text", "text": text},
         ],
     }]
     return tokenizer.apply_chat_template(
@@ -202,10 +387,16 @@ def build_native_inputs(
     frames: np.ndarray,
     timestamp_fps: float,
     processor_config: dict,
+    *,
+    prompt_style: str = "native_short",
+    min_pixels: int | None = None,
+    max_pixels: int | None = None,
 ) -> tuple[dict[str, torch.Tensor], dict]:
     """Build model inputs equivalent to Qwen3VLProcessor for one preloaded video."""
-    pixel_values, grid = native_preprocess_frames(frames, processor_config)
-    prompt = build_prompt(tokenizer, question)
+    pixel_values, grid = native_preprocess_frames(
+        frames, processor_config, min_pixels=min_pixels, max_pixels=max_pixels
+    )
+    prompt = build_prompt(tokenizer, question, prompt_style=prompt_style)
     if prompt.count(VIDEO_TOKEN) != 1:
         raise ValueError("Qwen chat template must contain exactly one video placeholder")
     prompt = prompt.replace(VIDEO_TOKEN, video_replacement(grid, timestamp_fps), 1)
@@ -236,6 +427,12 @@ def build_native_inputs(
         "native_video_tokens": expected_video_tokens,
         "resized_height": int(grid[1]) * 16,
         "resized_width": int(grid[2]) * 16,
+        "preprocess_min_pixels": int(
+            processor_config["size"]["shortest_edge"] if min_pixels is None else min_pixels
+        ),
+        "preprocess_max_pixels": int(
+            processor_config["size"]["longest_edge"] if max_pixels is None else max_pixels
+        ),
     }
 
 
@@ -255,8 +452,22 @@ def main() -> None:
     parser.add_argument("--task", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--protocol", default="native_qwen_matched32_generation")
+    parser.add_argument(
+        "--frame-policy", choices=["matched32", "official_2fps"], default="matched32"
+    )
+    parser.add_argument(
+        "--prompt-style", choices=["native_short", "official_mvbench"],
+        default="native_short",
+    )
     parser.add_argument("--num-frames", type=int, default=32)
     parser.add_argument("--timestamp-fps", type=float, default=4.0)
+    parser.add_argument("--max-frames", type=int, default=OFFICIAL_MAX_FRAMES)
+    parser.add_argument(
+        "--max-total-video-tokens", type=int, default=OFFICIAL_MAX_TOTAL_VIDEO_TOKENS
+    )
+    parser.add_argument(
+        "--max-tokens-per-unit", type=int, default=OFFICIAL_MAX_TOKENS_PER_UNIT
+    )
     parser.add_argument("--max-new-tokens", type=int, default=8)
     parser.add_argument("--max-clips", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
@@ -270,6 +481,12 @@ def main() -> None:
         parser.error("num_frames must be an even integer >= 2")
     if args.timestamp_fps <= 0:
         parser.error("timestamp_fps must be positive")
+    if args.max_frames < 4 or args.max_frames % 2:
+        parser.error("max_frames must be an even integer >= 4")
+    if args.max_total_video_tokens < 1 or args.max_tokens_per_unit < 1:
+        parser.error("official visual-token budgets must be positive")
+    if args.frame_policy == "official_2fps" and args.prompt_style != "official_mvbench":
+        parser.error("official_2fps must use prompt_style=official_mvbench")
     if args.num_shards < 1 or not 0 <= args.shard_index < args.num_shards:
         parser.error("require num_shards >= 1 and 0 <= shard_index < num_shards")
     if args.device.startswith("cuda") and not torch.cuda.is_available():
@@ -310,21 +527,48 @@ def main() -> None:
             skipped += 1
             continue
         try:
-            frames, frame_audit = load_native_frames(
-                item,
-                args.num_frames,
-                args.timestamp_fps,
-                args.seed * 100003 + item_index,
-            )
+            if args.frame_policy == "official_2fps":
+                frames, frame_audit = load_official_frames(
+                    item,
+                    sample_fps=OFFICIAL_SAMPLE_FPS,
+                    max_frames=args.max_frames,
+                    seed=args.seed * 100003 + item_index,
+                )
+                max_pixels = official_max_pixels(
+                    len(frames),
+                    max_total_video_tokens=args.max_total_video_tokens,
+                    max_tokens_per_unit=args.max_tokens_per_unit,
+                )
+            else:
+                frames, frame_audit = load_native_frames(
+                    item,
+                    args.num_frames,
+                    args.timestamp_fps,
+                    args.seed * 100003 + item_index,
+                )
+                max_pixels = None
             inputs, native_audit = build_native_inputs(
                 tokenizer,
                 question,
                 frames,
                 float(frame_audit["timestamp_fps"]),
                 processor_config,
+                prompt_style=args.prompt_style,
+                max_pixels=max_pixels,
             )
             grid = native_audit["video_grid_thw"]
             native_tokens = native_audit["native_video_tokens"]
+            if args.frame_policy == "official_2fps":
+                if native_tokens > args.max_total_video_tokens:
+                    raise ValueError(
+                        f"native video tokens {native_tokens} exceed total budget "
+                        f"{args.max_total_video_tokens}"
+                    )
+                if native_tokens > int(grid[0]) * args.max_tokens_per_unit:
+                    raise ValueError(
+                        f"native video tokens {native_tokens} exceed per-unit budget "
+                        f"{args.max_tokens_per_unit}"
+                    )
             inputs = _move_inputs(inputs, args.device)
             prompt_length = int(inputs["input_ids"].shape[1])
             generated = model.generate(
@@ -356,6 +600,7 @@ def main() -> None:
             "original_width": int(frames.shape[2]),
             "resized_height": native_audit["resized_height"],
             "resized_width": native_audit["resized_width"],
+            "preprocess_max_pixels": native_audit["preprocess_max_pixels"],
             **frame_audit,
         })
         if (local_index + 1) % 50 == 0:
@@ -365,13 +610,29 @@ def main() -> None:
                 f"{100 * correct / max(len(records), 1):.2f}%"
             )
 
+    if args.frame_policy == "official_2fps":
+        frame_protocol = "official_budget_reproduction_2fps_real_video"
+        answer_instruction = OFFICIAL_MVBENCH_INSTRUCTION
+    else:
+        frame_protocol = "matched_preextracted_32_native_compatible_smart_resize"
+        answer_instruction = ANSWER_INSTRUCTION
     metadata = {
         "model": os.path.abspath(args.model),
         "overlay": overlay_audit,
-        "frame_protocol": "matched_preextracted_32_native_compatible_smart_resize",
+        "frame_protocol": frame_protocol,
+        "frame_policy": args.frame_policy,
+        "prompt_style": args.prompt_style,
         "num_frames": args.num_frames,
+        "max_frames": args.max_frames,
         "fallback_timestamp_fps": args.timestamp_fps,
-        "answer_instruction": ANSWER_INSTRUCTION,
+        "requested_sample_fps": (
+            OFFICIAL_SAMPLE_FPS if args.frame_policy == "official_2fps" else args.timestamp_fps
+        ),
+        "answer_instruction": answer_instruction,
+        "official_budget": {
+            "max_total_video_tokens": args.max_total_video_tokens,
+            "max_tokens_per_unit": args.max_tokens_per_unit,
+        } if args.frame_policy == "official_2fps" else None,
         "generation": {"do_sample": False, "max_new_tokens": args.max_new_tokens},
         "processor_implementation": "torchvision_free_qwen3vl_compat_v1",
         "video_preprocessor_config": processor_config["_path"],
