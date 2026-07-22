@@ -36,18 +36,30 @@ export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 PY="${JEPA_ENV}/bin/python"
 mkdir -p "$ROOT/logs" "$ROOT/shards"
 IFS=',' read -r -a GPUS <<< "$GPU_LIST"
-SHARDS="${#GPUS[@]}"
-[[ "$SHARDS" -eq 4 ]] || { echo "official evaluation expects four local GPU shards" >&2; exit 2; }
+NGPU="${#GPUS[@]}"
+[[ "$NGPU" -eq 4 ]] || { echo "official evaluation expects four local GPUs" >&2; exit 2; }
+# full-generation (2048-frame) protocol OOMs a single 46GB L40S; run it as a
+# single process with the model sharded across all four GPUs (device_map=auto),
+# i.e. one shard. cap32 stays one-process-per-GPU (4 shards).
+if [[ "$frame_cap" -gt 32 ]]; then
+  SHARDS=1
+  DEVICE_MAP="auto"
+  VISIBLE="$GPU_LIST"
+else
+  SHARDS="$NGPU"
+  DEVICE_MAP=""
+  VISIBLE=""
+fi
 
 merged="$ROOT/${protocol}_mvbench.json"
 is_complete() {
-  "$PY" - "$merged" "$protocol" "$frame_cap" "$MAX_CLIPS" "$HEAD" <<'PY' >/dev/null 2>&1
+  "$PY" - "$merged" "$protocol" "$frame_cap" "$MAX_CLIPS" "$HEAD" "$SHARDS" <<'PY' >/dev/null 2>&1
 import json, os, sys
-path, protocol, cap, max_clips, commit = sys.argv[1:]
+path, protocol, cap, max_clips, commit, nshards = sys.argv[1:]
 if not os.path.isfile(path): raise SystemExit(1)
 d = json.load(open(path)); shards = d.get("metadata", {}).get("shards", [])
 ok = (
-    d.get("total", 0) > 0 and d.get("protocol") == protocol and len(shards) == 4
+    d.get("total", 0) > 0 and d.get("protocol") == protocol and len(shards) == int(nshards)
     and {int(x.get("max_frames", -1)) for x in shards} == {int(cap)}
     and {int(x.get("max_clips", -1)) for x in shards} == {int(max_clips)}
     and {x.get("frame_policy") for x in shards} == {"official_2fps"}
@@ -75,10 +87,18 @@ for ((shard=0; shard<SHARDS; shard++)); do
     --max-clips "$MAX_CLIPS" --num-shards "$SHARDS" --shard-index "$shard"
     --attn-implementation "$ATTN_IMPLEMENTATION"
   )
+  [[ -z "$DEVICE_MAP" ]] || args+=(--device-map "$DEVICE_MAP")
   [[ "$overlay" == - ]] || args+=(--overlay "$overlay")
-  echo "[exp13-official] gpu=${GPUS[$shard]} protocol=$protocol shard=$shard/$SHARDS cap=$frame_cap"
-  CUDA_VISIBLE_DEVICES="${GPUS[$shard]}" "$PY" "${args[@]}" \
-    > "$ROOT/logs/${protocol}_mvbench_shard${shard}.log" 2>&1 &
+  if [[ -n "$DEVICE_MAP" ]]; then
+    # single process across all GPUs
+    echo "[exp13-official] gpus=$VISIBLE protocol=$protocol shard=$shard/$SHARDS cap=$frame_cap device_map=$DEVICE_MAP"
+    CUDA_VISIBLE_DEVICES="$VISIBLE" "$PY" "${args[@]}" \
+      > "$ROOT/logs/${protocol}_mvbench_shard${shard}.log" 2>&1 &
+  else
+    echo "[exp13-official] gpu=${GPUS[$shard]} protocol=$protocol shard=$shard/$SHARDS cap=$frame_cap"
+    CUDA_VISIBLE_DEVICES="${GPUS[$shard]}" "$PY" "${args[@]}" \
+      > "$ROOT/logs/${protocol}_mvbench_shard${shard}.log" 2>&1 &
+  fi
   pids+=("$!")
 done
 for pid in "${pids[@]}"; do wait "$pid" || failed=1; done

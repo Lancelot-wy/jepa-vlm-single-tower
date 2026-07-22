@@ -474,6 +474,12 @@ def main() -> None:
     parser.add_argument("--num-shards", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--device-map",
+        default="",
+        help="optional HF device_map (e.g. auto) to shard model across GPUs; "
+        "overrides --device placement for multi-GPU single-process eval",
+    )
     parser.add_argument("--dtype", choices=["bfloat16", "float16", "float32"], default="bfloat16")
     parser.add_argument("--attn-implementation", default="sdpa")
     args = parser.parse_args()
@@ -497,14 +503,21 @@ def main() -> None:
     dtype = getattr(torch, args.dtype)
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     processor_config = load_video_preprocess_config(args.model)
-    model = Qwen3VLForConditionalGeneration.from_pretrained(
-        args.model,
+    load_kwargs = dict(
         dtype=dtype,
         attn_implementation=args.attn_implementation,
         local_files_only=True,
     )
+    use_device_map = bool(args.device_map)
+    if use_device_map:
+        load_kwargs["device_map"] = args.device_map
+    model = Qwen3VLForConditionalGeneration.from_pretrained(args.model, **load_kwargs)
     overlay_audit = apply_native_overlay(model, args.overlay) if args.overlay else None
-    model.requires_grad_(False).eval().to(args.device)
+    model.requires_grad_(False).eval()
+    if not use_device_map:
+        model = model.to(args.device)
+    # with device_map, inputs target the first parameter's device
+    input_device = args.device if not use_device_map else str(next(model.parameters()).device)
 
     all_items = load_items(args.data, args.task, args.max_clips)
     items = [
@@ -569,7 +582,7 @@ def main() -> None:
                         f"native video tokens {native_tokens} exceed per-unit budget "
                         f"{args.max_tokens_per_unit}"
                     )
-            inputs = _move_inputs(inputs, args.device)
+            inputs = _move_inputs(inputs, input_device)
             prompt_length = int(inputs["input_ids"].shape[1])
             generated = model.generate(
                 **inputs,
