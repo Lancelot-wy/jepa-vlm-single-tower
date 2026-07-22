@@ -24,6 +24,10 @@ Orca-style 状态预测路径：
 通过 K=4/16/64 的真实 Qwen、4×L40S DDP save/resume/eval smoke；本地 tiny-model 测试
 不能代替该门槛。
 
+EXP-12 训练结果完成后的 raw-Qwen / 原生 processor 锚定、脚本顺序与完整服务器命令见
+[`docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md`](docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md)。其中
+明确区分 Qwen 原生动态视觉 token 与本项目人为池化后的 K=4/16/64。
+
 已在本地完成端到端冒烟验证（tiny 随机模型 + 合成视频，CPU/MPS）：训练全变体、
 Phase B 联合训练、三项评估、断点恢复、梯度冻结、**DeepStack 防泄漏单测**均通过；
 真实 `Qwen/Qwen3-VL-2B-Instruct` 的 config 已确认与代码兼容（meta device 实例化验证）。

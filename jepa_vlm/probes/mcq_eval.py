@@ -16,10 +16,9 @@ filters to one --task. Reports overall + per-子类别 accuracy.
 from __future__ import annotations
 
 import argparse
-import collections
 import json
 import os
-import re
+import subprocess
 
 import numpy as np
 import torch
@@ -28,27 +27,16 @@ from ..config import resolved_raw_num_frames, resolved_temporal_units, resolved_
 from ..data.datasets import QACollator
 from ..data.video_io import decode_frames, patchify, resize_center_crop
 from .extract_features import load_run
-
-# matches "(A) foo", "A. foo", "A) foo", "A: foo"
-_OPT_RE = re.compile(r"^\s*\(?([A-H])[\).:.]\s*(.+?)\s*$")
+from .mcq_utils import parse_options, result_document, target_letter
 
 
-def parse_options(question: str):
-    """Return [(letter, full_line_as_answer), ...] parsed from the MCQ question text."""
-    opts = []
-    for line in question.splitlines():
-        m = _OPT_RE.match(line)
-        if m:
-            opts.append((m.group(1).upper(), line.strip()))
-    return opts
-
-
-def target_letter(target: str):
-    m = _OPT_RE.match(target.strip())
-    if m:
-        return m.group(1).upper()
-    m = re.match(r"\s*\(?([A-H])\b", target.strip())
-    return m.group(1).upper() if m else None
+def _git_commit() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
 
 
 def load_image_frames(images_info: list, num_frames: int) -> np.ndarray:
@@ -94,7 +82,16 @@ def main():
     ap.add_argument("--max-clips", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--output", default="", help="write per-sample records json (paired tests)")
+    ap.add_argument(
+        "--answer-format", choices=["full_option", "letter"], default="full_option",
+        help="candidate answer text; full_option preserves the historical evaluator",
+    )
+    ap.add_argument("--protocol", default="custom_answer_likelihood")
+    ap.add_argument("--num-shards", type=int, default=1)
+    ap.add_argument("--shard-index", type=int, default=0)
     args = ap.parse_args()
+    if args.num_shards < 1 or not 0 <= args.shard_index < args.num_shards:
+        ap.error("require num_shards >= 1 and 0 <= shard_index < num_shards")
 
     cfg, model = load_run(args.config, args.ckpt or None)
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -114,13 +111,19 @@ def main():
                           cfg.train.max_text_len)
 
     tc, mc = cfg.train, cfg.model
-    items = load_items(args.data, args.task, args.max_clips)
-    print(f"{args.task}: {len(items)} items")
+    all_items = load_items(args.data, args.task, args.max_clips)
+    items = [
+        (index, item) for index, item in enumerate(all_items)
+        if index % args.num_shards == args.shard_index
+    ]
+    print(
+        f"{args.task}: {len(items)}/{len(all_items)} items "
+        f"(shard {args.shard_index}/{args.num_shards}, answer={args.answer_format})"
+    )
 
-    stats = collections.defaultdict(lambda: [0, 0])  # subcat -> [correct, total]
     records = []  # per-sample, for paired significance tests across arms
     n_parsed = n_skip = 0
-    for i, it in enumerate(items):
+    for local_index, (item_index, it) in enumerate(items):
         question = it.get("问题", "")
         opts = parse_options(question)
         tgt = target_letter(str(it.get("目标值", "")))
@@ -130,7 +133,7 @@ def main():
         n_parsed += 1
         meta = it.get("meta") or {}
         images_info = meta.get("images_info") or []
-        rng = np.random.default_rng(args.seed * 100003 + i)
+        rng = np.random.default_rng(args.seed * 100003 + item_index)
         try:
             if images_info:
                 frames = load_image_frames(images_info, resolved_raw_num_frames(cfg))
@@ -140,7 +143,7 @@ def main():
                     random_offset=False, rng=rng,
                 )
         except Exception as e:  # noqa: BLE001
-            print(f"  [{i}] decode failed: {e}")
+            print(f"  [{item_index}] decode failed: {e}")
             n_skip += 1
             n_parsed -= 1
             continue
@@ -149,9 +152,13 @@ def main():
             tc.temporal_patch_size,
         )
 
+        candidate_answers = [
+            full_line if args.answer_format == "full_option" else letter
+            for letter, full_line in opts
+        ]
         batch = collator([
-            {"pixel_values": pv, "grid_thw": grid, "question": question, "answer": ans}
-            for _, ans in opts
+            {"pixel_values": pv, "grid_thw": grid, "question": question, "answer": answer}
+            for answer in candidate_answers
         ])
         out = model(
             pixel_values=batch["pixel_values"].to(device, dtype=dtype),
@@ -164,34 +171,54 @@ def main():
         ce = out.ce_per_sample.float().cpu()
         pred = opts[int(torch.argmin(ce))][0]
         sub = it.get("子类别", "?")
-        stats[sub][1] += 1
-        stats[sub][0] += int(pred == tgt)
         records.append({
-            "idx": i, "pred": pred, "gold": tgt, "sub_type": sub,
+            "idx": item_index, "pred": pred, "gold": tgt, "sub_type": sub,
             "ok": int(pred == tgt),
             "option_scores": {letter: float(score) for (letter, _), score in zip(opts, ce)},
         })
-        if (i + 1) % 100 == 0:
-            done = sum(v[1] for v in stats.values())
-            corr = sum(v[0] for v in stats.values())
-            print(f"{i + 1}/{len(items)}  running acc {100 * corr / max(done, 1):.2f}%")
+        if (local_index + 1) % 100 == 0:
+            corr = sum(record["ok"] for record in records)
+            print(
+                f"{local_index + 1}/{len(items)}  "
+                f"running acc {100 * corr / max(len(records), 1):.2f}%"
+            )
 
-    total = sum(v[1] for v in stats.values())
-    correct = sum(v[0] for v in stats.values())
+    total = len(records)
+    correct = sum(record["ok"] for record in records)
+    document = result_document(
+        task=args.task,
+        protocol=args.protocol,
+        scoring=f"answer_likelihood_mean_token_ce:{args.answer_format}",
+        records=records,
+        skipped=n_skip,
+        metadata={
+            "answer_format": args.answer_format,
+            "config": os.path.abspath(args.config),
+            "checkpoint": os.path.abspath(args.ckpt) if args.ckpt else None,
+            "dataset": os.path.abspath(args.data),
+            "visual_tokens_per_unit": resolved_visual_tokens(cfg),
+            "temporal_units": resolved_temporal_units(cfg),
+            "raw_num_frames": resolved_raw_num_frames(cfg),
+            "evaluator_commit": _git_commit(),
+            "num_shards": args.num_shards,
+            "shard_index": args.shard_index,
+            "max_clips": args.max_clips,
+        },
+    )
     print(f"\n=== {args.task} MCQ accuracy ===")
     print(f"parsed {n_parsed}, skipped {n_skip}")
     if total:
         print(f"overall: {correct}/{total} = {100 * correct / total:.2f}%")
-    for sub in sorted(stats):
-        c, t = stats[sub]
-        print(f"  {sub:28s} {c}/{t} = {100 * c / t:.2f}%")
+    for sub, values in document["categories"].items():
+        print(
+            f"  {sub:28s} {values['correct']}/{values['total']} "
+            f"= {100 * values['acc']:.2f}%"
+        )
 
     if args.output:
         os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
         with open(args.output, "w") as f:
-            json.dump({"task": args.task, "acc": correct / max(total, 1),
-                       "correct": correct, "total": total,
-                       "skipped": n_skip, "results": records}, f, ensure_ascii=False)
+            json.dump(document, f, ensure_ascii=False)
         print(f"per-sample records -> {args.output}")
 
 

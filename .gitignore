@@ -11,3 +11,5 @@ step_*/
 *.pt
 state.pt
 /outputs/
+/output/
+/tmp/

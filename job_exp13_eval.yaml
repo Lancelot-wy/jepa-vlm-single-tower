@@ -1,0 +1,32 @@
+# EXP-13 evaluation-only topology: 7 Workers x 4 L40S = 28 GPUs.
+# Workers 0-2 cover 12 custom-protocol jobs; workers 3-6 each run one native
+# protocol/task with four deterministic shards.  No training is started.
+type: jexp13-qwen-anchor
+business: VLM-wl01
+subBusiness: mm-general
+image: registry-wl01.vivo.lan/romai_dev/images/llava_train:vivolm-ngc-25.10-2604091110
+dataPaths:
+- /data/vjuicefs_sz_ocr_wl/public_data
+- /data/vjuicefs_ai_ocr_wl/public_data
+- /data/vjuicefs_ai_gpt_vision_wl04/public_data
+- /data/vjuicefs_ai_gpt_nlp/public_data
+tmpfs: true
+restartPolicy: Never
+
+run:
+  command: "EXP13_RUN_ID=unset EXP13_ATTEMPT_ID=unset EXP13_GIT_COMMIT=unset EXP13_MAX_CLIPS=0 bash /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower/scripts/cluster/job_exp13_eval_entry.sh"
+  rdma: 'ib'
+
+spec:
+  Worker:
+    num: 7
+    nodes:
+      vivo.com/machine-type: 'L40s'
+    limits:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"
+    requests:
+      gpu: "4"
+      cpu: "120"
+      memory: "990Gi"

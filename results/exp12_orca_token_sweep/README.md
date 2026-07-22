@@ -45,8 +45,10 @@ Observation Query 是否带来额外增益。
 ## 结论
 
 1. **K 是强信号**：CE 臂 K4→16→64，MVBench +4.46 / +2.40，TempCompass +2.09 / +2.78。
-   K=64 最优（54.47 / 60.19）且**尚未饱和**，值得继续扫 K=128/256。代价是吞吐下降
-   （34.8→24.4 samples/s）、显存上升（17.2→19.4 GB）。
+   K=64 最优（54.47 / 60.19），代价是吞吐下降（34.8→24.4 samples/s）、显存上升
+   （17.2→19.4 GB）。但 K=64 已是 256×256 输入经 patch16/merge2 后的原生 8×8
+   token grid；保持该分辨率时 K=128/256 只会插值放大，不能作为“未饱和”证据。
+   下一步必须先跑 raw-Qwen/native-compatible-processor 锚点评测，再决定是否注册升分辨率实验。
 2. **Observation Query 无增益**：query − CE 在所有 K 上 ≤ 0
    （MVBench −0.43/−0.25/−0.08，TempCompass −0.32/−0.32/0.0）。K 越大负面影响越小。
 3. **K 选择门控判定 FAIL**：所有 K 的 query 臂均未过 `centered_margin > 0.10` 与
@@ -55,6 +57,9 @@ Observation Query 是否带来额外增益。
 
 与 EXP-11 一致：在冻结单塔设定下，Orca 类 query 接口对下游 VQA 无正向作用；
 **视觉 token 数量 K 才是真正的杠杆**。
+
+这里的“杠杆”仅指自研管线内从 K=4 的强压缩恢复到 K=64 原生 grid；它尚不能证明
+优于 Qwen 默认协议。完整对照与执行方法见 `docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md`。
 
 ## 产物
 

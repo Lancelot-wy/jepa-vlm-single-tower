@@ -15,12 +15,14 @@
 | EXP-09 | 扩充数据上的纯 MSE 收益（原方案） | LLaVA-178K + NExT-QA train + v2 增广 | **暂停 / 不得作为正式主线启动**：NExT-QA train 未证实，LLaVA 复合来源仅靠路径名与 basename 不能完成来源级去污染 | — | EXECUTE_NOW.md（历史记录） |
 | EXP-10 | 来源审计的四源混合数据 | LLaVA-Video QA + Vript + InternVid + OpenVid；CE vs CE+MSE × 2 seeds，4,000 步，v2 增广 | **开放（当前唯一主线）**；本地视频可解析、来源白名单和评测 ID/路径去重均为开训硬门槛 | MVBench 49.36 / TempCompass 57.09（sft_s0） | CURATED_EXP10.md |
 | EXP-11 | Orca-inspired 目标 @ 冻结 ViT | 同 EXP-10 数据；frozen_sft vs mask15 vs orca_obs，`train_vision=false`，4,000 步 | **已完成**；冻结 ViT 隔离 Orca 目标效果；三臂 MVBench 打平，orca_obs TempCompass 最优 | MVBench 47.46 / TempCompass 56.33（orca_obs） | results/exp11_orca/comparison.md |
-| EXP-12 | Orca 单塔 visual-token sweep | 32 真实帧/16 units；K=4/16/64 × CE/Observation Query；冻结 ViT+merger；800 updates | **已完成**；6 臂 smoke+训练+评测全部通过；K=64 最优且未饱和，Observation Query 无增益（persistence>1，门控 FAIL，建议走 no-query） | MVBench 54.47 / TempCompass 60.19（a4_ce_k64） | results/exp12_orca_token_sweep/README.md、docs/EXP12_RUNBOOK.md |
+| EXP-12 | Orca 单塔 visual-token sweep | 32 真实帧/16 units；K=4/16/64 × CE/Observation Query；冻结 ViT+merger；800 updates | **已完成**；K=64（当前 256px 原生 grid）最优，Observation Query 无增益（persistence>1，门控 FAIL）；不得在同分辨率直接扩 K>64 | MVBench 54.47 / TempCompass 60.19（a4_ce_k64，内部自研尺） | results/exp12_orca_token_sweep/README.md、docs/EXP12_RUNBOOK.md |
+| EXP-13 | Qwen 原生协议锚定 | raw Qwen vs EXP-12 K64；custom full-option/letter likelihood + native processor/generation；MVBench/TempCompass 逐题配对 | **已配置，待服务器运行**；先确定 raw-base 和协议差，再判断 SFT 净效应 | — | docs/EXP12_NATIVE_QWEN_EVAL_RUNBOOK.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 
-- **当前主线**：EXP-12 是下一条有条件主线；必须先通过三个 K 的 4×L40S smoke，失败时
-  不得提交 A0–A5。EXP-10/11 的已有结果继续作为历史证据，不冒充 EXP-12 对照结果。
+- **当前主线**：EXP-12 训练已完成；在新增训练前先完成 EXP-13 原生 Qwen 锚定，确认
+  raw-base、协议差和 SFT 净效应。EXP-10/11 的已有结果继续作为历史证据，不冒充
+  EXP-12/13 对照结果。
 - **训练数据**：EXP-04/05 的 `qa_train_flow.jsonl`/`min_flow=8.42` 仅是历史 LLaVA
   分布的记录，**不得迁移**到新来源。EXP-10 使用来源审计后的
   `qa_train_clean.jsonl`，`min_flow=0`；`framediff` 只保留为诊断指标，不能冒充
@@ -61,6 +63,8 @@
 |---|---|---|
 | vlm-jepa 8 臂 MVBench（base 55.65 等） | vlm-jepa 自研 eval_mvbench_gen（32帧/裸模板/生成式） | 否，待 EXP-06 重锚 |
 | EXP-04 benchmark（MVBench 49.59 / TempCompass 57.78） | 本仓库 mcq_eval（pooled 管线，似然） | **永不可**（见下） |
+| EXP-12 benchmark（MVBench 54.47 / TempCompass 60.19） | 本仓库 mcq_eval（K64、连续视觉 block、完整选项似然） | 否，仅内部配对 |
+| EXP-13 native anchor | Qwen 官方数学的无 torchvision 兼容预处理/MRoPE + 匹配 32 帧 + greedy 字母生成 | 仍是内部锚；可判断同协议 SFT delta，不冒充官方榜单 |
 | EXP-04 held-out 时序 QA | 本仓库 temporal_qa_eval | 否（内部判定用） |
 | EXP-05 OVO/StreamingBench | 本仓库 streaming_eval（官方式协议自实现） | 否（内部配对判定用） |
 
