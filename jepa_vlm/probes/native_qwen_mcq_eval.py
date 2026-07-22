@@ -669,7 +669,7 @@ def main() -> None:
         metadata=metadata,
     )
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
-    with open(args.output, "w") as handle:
+    with open(args.output, "w", encoding="utf-8") as handle:
         json.dump(document, handle, ensure_ascii=False)
     print(
         f"{args.task}: {document['correct']}/{document['total']} "

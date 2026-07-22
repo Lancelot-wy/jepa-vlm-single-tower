@@ -54,11 +54,11 @@ def main() -> None:
     args = parser.parse_args()
     documents = []
     for path in args.inputs:
-        with open(path) as handle:
+        with open(path, encoding="utf-8") as handle:
             documents.append(json.load(handle))
     merged = merge_documents(documents)
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
-    with open(args.output, "w") as handle:
+    with open(args.output, "w", encoding="utf-8") as handle:
         json.dump(merged, handle, ensure_ascii=False)
     print(json.dumps({
         "output": args.output,

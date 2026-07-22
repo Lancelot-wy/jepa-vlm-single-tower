@@ -55,7 +55,7 @@ def load_image_frames(images_info: list, num_frames: int) -> np.ndarray:
 
 def load_items(path: str, task: str, max_clips: int):
     items = []
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -217,7 +217,7 @@ def main():
 
     if args.output:
         os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
-        with open(args.output, "w") as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             json.dump(document, f, ensure_ascii=False)
         print(f"per-sample records -> {args.output}")
 
