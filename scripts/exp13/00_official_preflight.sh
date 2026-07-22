@@ -8,7 +8,7 @@ SOURCE_RESULTS="${EXP12_SOURCE_RESULTS:-${BASE}/runs/exp12/exp12-20260722-014706
 MVB="${MVB:-/data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/MVBench/MVBench_v3_5_0.jsonl}"
 ROOT="${EXP13_OFFICIAL_ROOT:-${BASE}/runs/exp13-official/preflight}"
 EXPECTED_COMMIT="${EXP13_OFFICIAL_GIT_COMMIT:-}"
-ATTN_IMPLEMENTATION="${EXP13_OFFICIAL_ATTN:-flash_attention_2}"
+ATTN_IMPLEMENTATION="${EXP13_OFFICIAL_ATTN:-sdpa}"
 
 die() { echo "[exp13-official-preflight] ERROR: $*" >&2; exit 1; }
 [[ -d "$PROJECT_ROOT/.git" ]] || die "missing repository: $PROJECT_ROOT"
