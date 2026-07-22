@@ -15,7 +15,7 @@
 | EXP-09 | 扩充数据上的纯 MSE 收益（原方案） | LLaVA-178K + NExT-QA train + v2 增广 | **暂停 / 不得作为正式主线启动**：NExT-QA train 未证实，LLaVA 复合来源仅靠路径名与 basename 不能完成来源级去污染 | — | EXECUTE_NOW.md（历史记录） |
 | EXP-10 | 来源审计的四源混合数据 | LLaVA-Video QA + Vript + InternVid + OpenVid；CE vs CE+MSE × 2 seeds，4,000 步，v2 增广 | **开放（当前唯一主线）**；本地视频可解析、来源白名单和评测 ID/路径去重均为开训硬门槛 | MVBench 49.36 / TempCompass 57.09（sft_s0） | CURATED_EXP10.md |
 | EXP-11 | Orca-inspired 目标 @ 冻结 ViT | 同 EXP-10 数据；frozen_sft vs mask15 vs orca_obs，`train_vision=false`，4,000 步 | **已完成**；冻结 ViT 隔离 Orca 目标效果；三臂 MVBench 打平，orca_obs TempCompass 最优 | MVBench 47.46 / TempCompass 56.33（orca_obs） | results/exp11_orca/comparison.md |
-| EXP-12 | Orca 单塔 visual-token sweep | 32 真实帧/16 units；K=4/16/64 × CE/Observation Query；冻结 ViT+merger；800 updates | **代码完成、本地测试通过；真实 4 卡 smoke 未完成，A0–A5 尚未提交** | 待真实 smoke 与正式评测；不得把 tiny/synthetic 结果登记为实验结果 | docs/EXP12_RUNBOOK.md、docs/EXP12_IMPLEMENTATION_REPORT.md |
+| EXP-12 | Orca 单塔 visual-token sweep | 32 真实帧/16 units；K=4/16/64 × CE/Observation Query；冻结 ViT+merger；800 updates | **已完成**；6 臂 smoke+训练+评测全部通过；K=64 最优且未饱和，Observation Query 无增益（persistence>1，门控 FAIL，建议走 no-query） | MVBench 54.47 / TempCompass 60.19（a4_ce_k64） | results/exp12_orca_token_sweep/README.md、docs/EXP12_RUNBOOK.md |
 
 ## 现行标准（改动须先改此处并全员周知）
 
@@ -48,7 +48,7 @@
 | C8 | ✓ | ✓ | 回归+MTP | v4_dv25_mtp1 | 未确立 |
 | C9 | ✓ | ✓ | ✗（双CE） | v4_dvce25 | 显著更差：mask 污染 CE 实锤 |
 | C10 | ✓ | ✗ | next-hidden 自预测 | vlm-jepa λ 系列 | 零效应（剂量平坦） |
-| C11 | ✓ | ✗ | frozen-merger future state + spatial Query | EXP-12 A1/A3/A5 | 待跑；必须相对同 K CE 配对 |
+| C11 | ✓ | ✗ | frozen-merger future state + spatial Query | EXP-12 A1/A3/A5 | 零/负效应：所有 K 上 query≤CE，persistence>1（退化为复制），门控 FAIL |
 | C12 | ✓ | ✗ | Event-conditioned adjacent-event state | EXP-12 B3/B5 | 仅代码/模板；A 批完成前禁止提交 |
 
 读法：mask 是净负资产（C9）；干净输入 + visual loss 中 target 空间决定生死

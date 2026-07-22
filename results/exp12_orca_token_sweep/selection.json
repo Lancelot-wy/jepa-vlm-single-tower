@@ -1,0 +1,63 @@
+{
+  "status": "FAIL",
+  "best_k": null,
+  "selection": null,
+  "candidate_audit": [
+    {
+      "K": 4,
+      "passed": false,
+      "gates": {
+        "tempcompass_not_clearly_negative": false,
+        "mvbench_drop_within_0.3": false,
+        "centered_margin_gt_0.10": false,
+        "persistence_ratio_lt_0.90": false,
+        "effective_rank_not_declining": true,
+        "complete_and_finite": true
+      },
+      "tempcompass_delta": -0.31645569620251734,
+      "mvbench_delta": -0.4255319148936181,
+      "order_direction_delta": 0,
+      "persistence_ratio": 2.7765151977539064,
+      "samples_per_sec": 25.902465511813745,
+      "max_memory_gb": 18.71918487548828
+    },
+    {
+      "K": 16,
+      "passed": false,
+      "gates": {
+        "tempcompass_not_clearly_negative": false,
+        "mvbench_drop_within_0.3": true,
+        "centered_margin_gt_0.10": false,
+        "persistence_ratio_lt_0.90": false,
+        "effective_rank_not_declining": true,
+        "complete_and_finite": true
+      },
+      "tempcompass_delta": -0.31645569620252445,
+      "mvbench_delta": -0.250312891113893,
+      "order_direction_delta": 0,
+      "persistence_ratio": 1.8309724807739258,
+      "samples_per_sec": 22.931040468384765,
+      "max_memory_gb": 19.61297607421875
+    },
+    {
+      "K": 64,
+      "passed": false,
+      "gates": {
+        "tempcompass_not_clearly_negative": true,
+        "mvbench_drop_within_0.3": true,
+        "centered_margin_gt_0.10": false,
+        "persistence_ratio_lt_0.90": false,
+        "effective_rank_not_declining": true,
+        "complete_and_finite": true
+      },
+      "tempcompass_delta": 0.0,
+      "mvbench_delta": -0.07509386733416079,
+      "order_direction_delta": 0,
+      "persistence_ratio": 1.4315850257873535,
+      "samples_per_sec": 21.49552446059766,
+      "max_memory_gb": 24.825843811035156
+    }
+  ],
+  "event_auto_submit": false,
+  "recommendation": "Do not start Event automatically; prioritize no-query or beat-copy evidence."
+}
