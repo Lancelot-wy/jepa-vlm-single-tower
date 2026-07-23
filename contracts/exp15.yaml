@@ -1,0 +1,219 @@
+schema_version: 1
+
+experiment:
+  id: EXP-15
+  name: Native Qwen + faithful ORCA objectives
+  branch: exp15-native-orca
+  phase: implementation_required
+  model: Qwen3-VL-2B-Instruct
+  purpose: >-
+    Recover a native-Qwen SFT baseline and test whether isolated single-frame
+    Observation and adjacent-event prediction add temporal capability without
+    reducing answer quality.
+
+server_paths:
+  project_root: /data/vjuicefs_sz_ocr_wl/public_data/11193960/jepa-vlm-single-tower
+  shared_root: /data/vjuicefs_sz_ocr_wl/public_data/11193960
+  model_root: /data/vjuicefs_sz_ocr_wl/public_data/11193960/models/Qwen3-VL-2B-Instruct
+  run_root: /data/vjuicefs_sz_ocr_wl/public_data/11193960/runs/exp15
+  mvbench: /data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/MVBench/MVBench_v3_5_0.jsonl
+  tempcompass: /data/vjuicefs_sz_ocr_wl/public_data/11189192/automatic-evaluation/eval_data/v3_5_data/Tempcompass/Tempcompass_v3_5_0.jsonl
+  llava_video_root: /data/vjuicefs_ai_ocr_wl/public_data/video_data/LLaVA-Video-178K
+  vript_metadata_glob: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_traindata/open_data/Vript_caption_4k/*.jsonl
+  internvid_metadata: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_traindata/open_data/InternVid_caption_4k/InternVid_caption_converted.jsonl
+  openvid_metadata_glob: /data/vjuicefs_sz_ocr_wl/public_data/AIGC_Understanding/dataset/video_traindata/syn_data/OpenVid_4k_syn_grd/*.json
+  vtraining_cli: /data/vtraining_04/code/vtraining/cli/vtraining
+
+resources:
+  platform_unit: Worker
+  workers: 24
+  gpus_per_worker: 4
+  total_gpus: 96
+  machine_type: L40s
+  arms: 6
+  workers_per_arm: 4
+  gpus_per_arm: 16
+  per_device_batch: 1
+  gradient_accumulation: 8
+  effective_ce_batch: 128
+  topology_rule: six independent 16-GPU DDP worlds; never one 96-GPU world
+  restart_policy: Never
+  auto_release: true
+
+arms:
+  - id: c0_native_ce_seed0
+    seed: 0
+    objectives: [ce]
+  - id: c1_native_ce_seed1
+    seed: 1
+    objectives: [ce]
+  - id: o0_native_ce_obs_seed0
+    seed: 0
+    objectives: [ce, observation]
+  - id: o1_native_ce_obs_seed1
+    seed: 1
+    objectives: [ce, observation]
+  - id: e0_native_ce_obs_event_seed0
+    seed: 0
+    objectives: [ce, observation, event]
+  - id: e1_native_ce_obs_event_seed1
+    seed: 1
+    objectives: [ce, observation, event]
+
+training:
+  pilot_optimizer_steps: 4000
+  checkpoint_steps: [500, 1000, 2000, 4000]
+  continuation_steps_if_candidate: [8000, 10844]
+  precision: bfloat16
+  vision_tower_trainable: false
+  merger_trainable: false
+  llm_trainable: true
+  native_dynamic_visual_tokens: true
+  manual_visual_token_k_sweep: false
+  ce_exposure_identical_across_arms: true
+  ce_batch_order_identical_within_seed: true
+  no_benchmark_checkpoint_selection: true
+  checkpoint_atomic_save: true
+  checkpoint_resume_required: true
+  objective_sample_ratio_reference:
+    observation: 5
+    event: 15
+    vqa: 1
+  note: >-
+    Preserve identical VQA/CE exposure across matched arms. Auxiliary forwards
+    are additive within an optimizer update; log realized per-objective sample
+    counts and throughput. If the exact 5:15:1 reference is too slow, benchmark
+    and preregister one reduced ratio before the full launch rather than
+    silently changing it.
+
+data_contract:
+  ce:
+    sources: [LLaVA-Video-178K audited VQA rows]
+    forbidden_sources: [generic Vript captions, generic InternVid captions, OpenVid grounding rows]
+    temporal_qa_ratio: 0.0
+    split_group: normalized source_dataset plus parent video id
+    decontamination: source exclusion plus normalized id/path collision removal against both evaluators
+  observation:
+    primary_sources: [InternVid processed clips, Vript processed clips]
+    optional_later_ablation: [OpenVid processed clips]
+    requirement: real motion-aware source/target sampling with independent frame encodes
+  event:
+    source: Vript processed scene clips
+    grouping: parent video id parsed from scene id/path
+    adjacency: previous or next scene index only
+    schema: [source_video_path, target_video_path, parent_video_id, source_event_id, target_event_id, direction, condition, source_dataset, source_id]
+    split_group: parent_video_id
+  universal:
+    train_val_group_overlap: 0
+    missing_video_rows_allowed: 0
+    duplicate_source_id_rows_allowed: 0
+    manifest_hash_required: true
+    source_histogram_required: true
+
+model_contract:
+  ce_path:
+    input: complete native video plus question
+    processor: Qwen native processor and chat template
+    loss: answer-only cross entropy
+    forbidden: [state queries, masked answer video, manual pooled visual block, synthetic temporal QA]
+  observation_path:
+    source: one real frame encoded independently
+    target: adjacent future real frame encoded independently under inference_mode and detach
+    temporal_patch_rule: duplicate the same physical frame only inside its isolated ViT call
+    forbidden: [two timestamps in one state ViT call, target tokens in student LLM, interpolation target]
+    queries: 256
+    query_position: after source visual tokens and fixed observation instruction
+  event_path:
+    student_input_order: [source frame, Query1, adjacent-event instruction, Query2]
+    target: random frame from the adjacent previous or next event
+    target_visible_to_student: false
+    queries_per_query_set: 256
+    hard_negative: same parent video wrong event
+  transition_head:
+    layers: 2
+    hidden_multiplier: 8
+    shape: D -> 8D -> D
+  visual_pair_loss:
+    mse_weight: 0.1
+    cosine_weight: 0.9
+  objective_coefficients:
+    observation: 0.1
+    event: 0.5
+    vqa: 0.4
+    controlled_ce_scale_rule: >-
+      Keep the CE gradient scale equal to the CE-only arm; express auxiliary
+      coefficients relative to the 0.4 VQA coefficient and record the exact
+      implemented formula.
+  optimizer_reference:
+    base_learning_rate: 3.5e-5
+    head_learning_rate: 1.2e-4
+    minimum_learning_rate: 1.0e-6
+    weight_decay: 1.0e-8
+    scheduler: cosine
+
+mechanism_gates:
+  native_train_eval_parity: training and evaluation use the same official processor/chat/video semantics
+  observation:
+    dynamic_persistence_ratio_max: 0.90
+    centered_margin_min: 0.10
+    true_target_must_beat: [shuffled batch target, shuffled position target]
+    collapse_forbidden: true
+  event:
+    true_target_must_beat: [same-video wrong-event target, shuffled target]
+    previous_and_next_required: true
+    target_leakage_allowed: false
+  ce:
+    answer_only_mask_test: required
+    heldout_ce_serious_regression_allowed: false
+  benchmark:
+    evaluator: native greedy generation
+    paired_statistics: [McNemar, paired bootstrap confidence interval]
+    final_full_evaluation: MVBench plus TempCompass
+
+prelaunch_gates:
+  - raw EXP-13/14 logs, configs, predictions, and hashes recovered or explicitly marked unavailable
+  - suspicious identical EXP-14 seed aggregates resolved from per-item provenance
+  - native collator/forward parity test passes
+  - clean VQA manifest audit and group split pass
+  - Vript adjacent-event audit and group split pass
+  - isolated-frame and target-detach tests pass
+  - one-GPU tiny-real smoke passes for every objective
+  - one-Worker four-GPU save/resume/eval smoke passes
+  - two-Worker DDP smoke passes for CE, Observation, and Event
+  - 24-Worker topology dry-run and fixed-commit check pass
+
+required_artifacts_after_implementation:
+  - configs/exp15/_base.yaml
+  - configs/exp15/c0_native_ce_seed0.yaml
+  - configs/exp15/c1_native_ce_seed1.yaml
+  - configs/exp15/o0_native_ce_obs_seed0.yaml
+  - configs/exp15/o1_native_ce_obs_seed1.yaml
+  - configs/exp15/e0_native_ce_obs_event_seed0.yaml
+  - configs/exp15/e1_native_ce_obs_event_seed1.yaml
+  - scripts/exp15/build_clean_vqa_manifest.py
+  - scripts/exp15/build_observation_manifest.py
+  - scripts/exp15/build_vript_event_manifest.py
+  - scripts/exp15/run_arm.sh
+  - scripts/exp15/eval_arm.sh
+  - scripts/exp15/01_run_tests.sh
+  - scripts/exp15/02_run_smokes.sh
+  - scripts/exp15/03_submit.sh
+  - scripts/exp15/04_status.sh
+  - scripts/exp15/05_resume.sh
+  - scripts/cluster/job_exp15_entry.sh
+  - job_exp15.yaml
+  - tests/test_exp15_native_parity.py
+  - tests/test_exp15_data_contract.py
+  - tests/test_exp15_orca_objectives.py
+  - tests/test_exp15_job.py
+
+forbidden_shortcuts:
+  - call the existing manual continuous visual-block collator native
+  - use K4/K16/K64 as the EXP-15 independent variable
+  - use a benchmark subset for early stopping or checkpoint selection
+  - rerun mask15 as a primary arm
+  - add a blanket copy penalty to the primary six arms
+  - use generic caption CE as the clean baseline
+  - launch with placeholder paths, dirty checkout, floating branch, or missing resume smoke
+  - claim EXP-11 had two independent seeds
+  - treat EXP-14 summary-only seed results as verified provenance
