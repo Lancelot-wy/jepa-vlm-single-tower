@@ -3,6 +3,21 @@
 在 Qwen3-VL-2B 的 LLM 主干上施加视觉 latent 回归目标（V1 / V2.1 / V2.2 + MTP），
 验证模型能否学到帧间动力学信息。实现对应实验方案全部内容，所有变体与消融由 config 控制。
 
+## EXP-15：原生 Qwen 基线 + 逐帧 ORCA 纠偏（当前主线）
+
+EXP-12/13/14 已确认：K=4→64 的主要收益是恢复被人工池化丢失的视觉信息，旧状态目标
+仍是 persistence/copy 解，而且自定义训练输入与更强的 Qwen 原生评测输入不一致。
+EXP-15 因此不再扫 K，也不重跑 mask15，而是先实现训练/评测共用的原生 Qwen 视频路径，
+再用两个种子比较三种严格配对设置：clean CE、CE+单帧 Observation、
+CE+Observation+Vript adjacent Event。
+
+服务器 Agent 的唯一执行合同见
+[`docs/EXP15_SERVER_AGENT.md`](docs/EXP15_SERVER_AGENT.md)，机器可读约束见
+[`contracts/exp15.yaml`](contracts/exp15.yaml)，当前进度见
+[`results/exp15/AGENT_STATUS.md`](results/exp15/AGENT_STATUS.md)。24 Worker 正式任务在
+实现、数据审计、原生 parity、单卡/单 Worker/双 Worker DDP 和断点续训门槛全部通过前
+禁止提交。
+
 ## EXP-12：Orca 单塔视觉 token sweep
 
 当前开发分支 `exp12-orca-token-sweep` 增加了一条与历史 mask/MTP 接口隔离的
